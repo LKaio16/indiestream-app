@@ -1,4 +1,6 @@
+
 import 'package:flutter/material.dart';
+import 'cadastro_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -58,7 +60,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: Color(0xFF1D1D1D),
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
@@ -186,7 +188,12 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextStyle(color: Colors.grey),
                     ),
                     TextButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => CadastroScreen()),
+                        );
+                      },
                       child: const Text(
                         'Cadastre-se',
                         style: TextStyle(
