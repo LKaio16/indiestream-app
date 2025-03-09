@@ -110,7 +110,7 @@ def main():
         "Ator", "Diretor de Cinema", "Roteirista", "Cenógrafo", "Figurinista",
         "Maquiador", "Cameraman", "Editor de Vídeo", "Produtor de Cinema", "Animador",
         "Dublador", "Sonoplasta", "Iluminador", "Crítico de Cinema", "Diretor de Fotografia",
-        "Designer Gráfico", "Escultor", "Pintor", "Curador de Arte", "Restaurador de Obras"
+        "Designer Gráfico", "Escultor", "Pintor", "Curador de Arte", "Restaurador de Obras", "Dançarino"
     ]
 
     # Criar objetos Profissao
