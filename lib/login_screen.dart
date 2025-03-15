@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'cadastro_screen.dart';
+import 'edicao-perfil_screen.dart' as TelaEdicaoPerfil;
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -61,21 +62,31 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF1D1D1D),
-      body: Center(
+      body  : Center(
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Image.asset(
-                  'assets/logo.png',
-                  height: 80,
+                GestureDetector(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => TelaEdicaoPerfil.TelaEdicaoPerfil()), // Usando o alias para acessar a classe
+                    );
+                  },
+                  child: Image.asset(
+                    'assets/logo.png',
+                    height: 80,
+                  ),
                 ),
+
                 const SizedBox(height: 20),
                 const Text(
                   'Faça login em sua conta',
                   style: TextStyle(
+
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
