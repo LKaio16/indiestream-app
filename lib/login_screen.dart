@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'cadastro_screen.dart';
 import 'edicao-perfil_screen.dart' as TelaEdicaoPerfil;
+import 'home_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -44,6 +45,12 @@ class _LoginScreenState extends State<LoginScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Login bem-sucedido! Token: ${data['token']}')),
         );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
+        );
+
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Email ou senha inválidos')),
