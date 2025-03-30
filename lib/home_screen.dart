@@ -27,33 +27,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.grey[900],
-        title: Row(
-          children: [
-
-            const SizedBox(width: 15),
-            Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  hintText: "Busque por pessoas ou projetos",
-                  hintStyle: TextStyle(color: Colors.white70),
-                  filled: true,
-                  fillColor: Colors.grey[800],
-                  prefixIcon: Icon(Icons.search, color: Colors.white54),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-                style: const TextStyle(color: Colors.white),
-              ),
-            ),
-            const SizedBox(width: 15),
-
-          ],
-        ),
-      ),
       body: _screens[_selectedIndex],
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.grey[900],
