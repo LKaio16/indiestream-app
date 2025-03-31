@@ -1,7 +1,9 @@
-
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'auth_service.dart';
 import 'cadastro_screen.dart';
-import 'edicao-perfil_screen.dart' as TelaEdicaoPerfil;
+import 'config_page.dart' as config;
+import 'home_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
@@ -18,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
+  // login_screen.dart (parte relevante)
   Future<void> _login() async {
     setState(() => _isLoading = true);
 
@@ -41,21 +44,30 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+
+        await AuthService.saveUserData(data['id']);
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login bem-sucedido! Token: ${data['token']}')),
+          SnackBar(content: Text(data['message'] ?? 'Login bem-sucedido')),
+        );
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
       } else {
+        final errorData = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Email ou senha inválidos')),
+          SnackBar(content: Text(errorData['message'] ?? 'Credenciais inválidas')),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Erro ao conectar ao servidor')),
       );
+    } finally {
+      setState(() => _isLoading = false);
     }
-
-    setState(() => _isLoading = false);
   }
 
   @override
@@ -73,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => TelaEdicaoPerfil.TelaEdicaoPerfil()), // Usando o alias para acessar a classe
+                      MaterialPageRoute(builder: (context) => config.PaginaConfiguracao()), // Usando o alias para acessar a classe
                     );
                   },
                   child: Image.asset(
