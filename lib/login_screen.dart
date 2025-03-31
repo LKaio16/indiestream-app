@@ -1,5 +1,6 @@
-
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'auth_service.dart';
 import 'cadastro_screen.dart';
 import 'edicao-perfil_screen.dart' as TelaEdicaoPerfil;
 import 'home_screen.dart';
@@ -19,6 +20,7 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
+  // login_screen.dart (parte relevante)
   Future<void> _login() async {
     setState(() => _isLoading = true);
 
@@ -42,27 +44,30 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
+
+        await AuthService.saveUserData(data['id']);
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login bem-sucedido! Token: ${data['token']}')),
+          SnackBar(content: Text(data['message'] ?? 'Login bem-sucedido')),
         );
 
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),
         );
-
       } else {
+        final errorData = jsonDecode(response.body);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Email ou senha inválidos')),
+          SnackBar(content: Text(errorData['message'] ?? 'Credenciais inválidas')),
         );
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Erro ao conectar ao servidor')),
       );
+    } finally {
+      setState(() => _isLoading = false);
     }
-
-    setState(() => _isLoading = false);
   }
 
   @override
