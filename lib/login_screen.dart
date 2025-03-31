@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
 import 'cadastro_screen.dart';
-import 'edicao-perfil_screen.dart' as TelaEdicaoPerfil;
+import 'config_page.dart' as config;
 import 'home_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -85,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => TelaEdicaoPerfil.TelaEdicaoPerfil()), // Usando o alias para acessar a classe
+                      MaterialPageRoute(builder: (context) => config.PaginaConfiguracao()), // Usando o alias para acessar a classe
                     );
                   },
                   child: Image.asset(
