@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:indiestream_app/projeto_create_screen.dart';
+
 class ProjetosScreen extends StatefulWidget {
   const ProjetosScreen({super.key});
 
@@ -180,7 +182,10 @@ class _ProjetosScreenState extends State<ProjetosScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.amber,
         onPressed: () {
-          // Lógica para criar um novo projeto
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const CriarProjetoScreen()),
+          );
         },
         child: const Icon(Icons.add, color: Colors.black),
       ),
