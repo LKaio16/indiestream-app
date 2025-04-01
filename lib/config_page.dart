@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'edicao-perfil_screen.dart' as edit;
+import 'sobre_nos.dart' as sobre;
 
 class PaginaConfiguracao extends StatefulWidget {
   @override
@@ -51,12 +52,21 @@ class _PaginaConfiguracaoState extends State<PaginaConfiguracao> {
             SizedBox(height: 15),
             _criarBotao("Visualizar Planos"),
             SizedBox(height: 15),
-            _criarBotao("Sobre nós"),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => sobre.PaginaSobre()), // Substitua com a tela correta
+                );
+              },
+              child: _criarBotao("Sobre nós"),
+            ),
           ],
         ),
       ),
     );
   }
+
 
   Widget _criarItemToggle(String titulo, bool valor, Function(bool) onChanged) {
     return Container(

@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 
 import 'package:indiestream_app/projeto_create_screen.dart';
+import 'package:indiestream_app/projeto_detalhes_screen.dart';
 
 class ProjetosScreen extends StatefulWidget {
   const ProjetosScreen({super.key});
@@ -88,7 +89,14 @@ class _ProjetosScreenState extends State<ProjetosScreen> {
 
                   return GestureDetector(
                     onTap: () {
-                      // Lógica para abrir detalhes do projeto
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ProjetoDetalhesScreen(
+                            projetoId: projeto["id"].toString(),
+                          ),
+                        ),
+                      );
                     },
                     child: Card(
                       color: Colors.grey[900],
