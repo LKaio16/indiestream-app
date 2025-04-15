@@ -18,6 +18,8 @@ class UserDetalhesScreen extends StatefulWidget {
 class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
   Map<String, dynamic>? _user;
   List<dynamic> _projetos = [];
+  List<dynamic> _habilidades = [];
+  List<dynamic> _obrasFavoritas = [];
   bool _isLoading = true;
   bool _isCurrentUser = false;
   int _paginaAtual = 1;
@@ -36,8 +38,12 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
       );
 
       if (userResponse.statusCode == 200) {
+        final userData = json.decode(utf8.decode(userResponse.bodyBytes));
+
         setState(() {
-          _user = json.decode(utf8.decode(userResponse.bodyBytes));
+          _user = userData;
+          _habilidades = userData["habilidades"] ?? [];
+          _obrasFavoritas = userData["obrasFavoritas"] ?? [];
         });
 
         final currentUserId = await AuthService.getUserId();
@@ -91,6 +97,137 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
       return const FaIcon(FontAwesomeIcons.envelope,
           color: Colors.grey, size: 24);
     }
+  }
+
+  Widget _buildHabilidadesSection() {
+    if (_habilidades.isEmpty) {
+      return Container(); // Retorna widget vazio se não houver habilidades
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              FaIcon(FontAwesomeIcons.lightbulb,
+                  size: 16, color: Colors.white),
+              SizedBox(width: 8),
+              Text(
+                "Habilidades",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Divider(color: Colors.white24),
+          const SizedBox(height: 8),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _habilidades.map<Widget>((habilidade) {
+              return Chip(
+                label: Text(
+                  habilidade["nome"] ?? "Habilidade",
+                  style: const TextStyle(color: Colors.white),
+                ),
+                backgroundColor: Colors.grey[800],
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildObrasFavoritasSection() {
+    if (_obrasFavoritas.isEmpty) {
+      return Container(); // Retorna widget vazio se não houver obras favoritas
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              FaIcon(FontAwesomeIcons.heart,
+                  size: 16, color: Colors.white),
+              SizedBox(width: 8),
+              Text(
+                "Obras Favoritas",
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Divider(color: Colors.white24),
+          const SizedBox(height: 8),
+          SizedBox(
+            height: 180,
+            child: ListView.builder(
+              scrollDirection: Axis.horizontal,
+              itemCount: _obrasFavoritas.length,
+              itemBuilder: (context, index) {
+                final obra = _obrasFavoritas[index];
+                return Container(
+                  width: 120,
+                  margin: const EdgeInsets.only(right: 16),
+                  child: Column(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: CachedNetworkImage(
+                          imageUrl: obra["imagemUrl"] ?? "",
+                          width: 120,
+                          height: 120,
+                          fit: BoxFit.cover,
+                          placeholder: (context, url) => Container(
+                            color: Colors.grey[800],
+                            child: const Center(
+                              child: FaIcon(FontAwesomeIcons.image,
+                                  color: Colors.white54),
+                            ),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: Colors.grey[800],
+                            child: const Center(
+                              child: FaIcon(
+                                  FontAwesomeIcons.triangleExclamation,
+                                  color: Colors.white54),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        obra["titulo"] ?? "Sem título",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -262,6 +399,8 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
                     ],
                   ),
                   const SizedBox(height: 8),
+                  const Divider(color: Colors.white24),
+                  const SizedBox(height: 8),
                   Text(
                     _user!["sobreMim"] ?? "Nenhuma informação disponível",
                     style: const TextStyle(
@@ -272,6 +411,12 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
                 ],
               ),
             ),
+
+            // Seção de Habilidades
+            _buildHabilidadesSection(),
+
+            // Seção de Obras Favoritas
+            _buildObrasFavoritasSection(),
 
             // Seção de Projetos
             Padding(
@@ -305,6 +450,8 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  const Divider(color: Colors.white24),
                   const SizedBox(height: 16),
                   if (_projetos.isEmpty)
                     const Center(
