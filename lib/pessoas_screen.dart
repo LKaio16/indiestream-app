@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
+import 'package:indiestream_app/user_detalhes_screen.dart';
+
 class PessoasScreen extends StatefulWidget {
   const PessoasScreen({super.key});
 
@@ -88,7 +90,14 @@ class _PessoasScreenState extends State<PessoasScreen> {
 
                   return GestureDetector(
                     onTap: () {
-                      // Lógica para abrir detalhes do usuário
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => UserDetalhesScreen(
+                            userId: usuario["id"].toString(),
+                          ),
+                        ),
+                      );
                     },
                     child: Card(
                       color: Colors.grey[900],
