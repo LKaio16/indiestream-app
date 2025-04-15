@@ -158,6 +158,41 @@ class UsuarioHabilidadeRepository:
             print(f"Erro ao salvar dados no banco: {e}")
             self.db.conn.rollback()
 
+class Comentario:
+    def __init__(self, id_projeto, id_usuario, texto):
+        self.id_projeto = id_projeto
+        self.id_usuario = id_usuario
+        self.texto = texto
+
+class ComentarioRepository:
+    def __init__(self, db_connection):
+        self.db = db_connection
+
+    def inserir_comentario(self, usuario_habilidades):
+        try:
+            query = "INSERT INTO comentario (texto, id_projeto, id_usuario) VALUES (%s, %s, %s)"
+            self.db.cursor.executemany(query, usuario_habilidades)
+            self.db.conn.commit()
+            print("Dados salvos com sucesso na tabela 'comentario'.")
+        except Exception as e:
+            print(f"Erro ao salvar dados no banco: {e}")
+            self.db.conn.rollback()
+class Projeto:
+    def __init__(self, id_projeto, nome):
+        self.id_projeto = id_projeto
+        self.nome = nome
+
+class ProjetoRepository:
+    def __init__(self, db_connection):
+        self.db = db_connection
+
+    def obter_projetos(self):
+        try:
+            self.db.cursor.execute("SELECT id_projeto FROM projeto")
+            return [row[0] for row in self.db.cursor.fetchall()]
+        except Exception as e:
+            print(f"Erro ao buscar projetos: {e}")
+            return []
 
 def main():
     """Função principal para executar o script."""
@@ -181,6 +216,18 @@ def main():
         "Distribuição e marketing de filmes", "Produção executiva", "Coordenação de equipe técnica"
     ]
 
+    #Lista de comentarios
+    temas = ["O filme", "A trilha sonora", "A direção de arte", "A atuação", "A fotografia", "O roteiro"]
+    adjetivos = ["é incrível", "é mediana", "decepcionou um pouco", "é uma obra-prima", "é confusa", "é emocionante"]
+    complementos = [
+        "Definitivamente uma das melhores obras do ano!",
+        "Achei que faltou algo para ser memorável.",
+        "Vale muito a pena conferir.",
+        "Com certeza vai dividir opiniões.",
+        "Impossível não se emocionar com essa obra.",
+        "Um marco na história do cinema/música/arte."
+    ]
+
     # Enumera cada profissão
     lista_profissoes = [Profissao(i, nome) for i, nome in enumerate(profissoes, start=1)]
 
@@ -197,16 +244,21 @@ def main():
     # Inserir dados
     repo = ProfissaoRepository(db)
     repo_habilidade = HabilidadeRepository(db)
+    repo_projeto = ProjetoRepository(db)
     op.truncate_table("profissao", "CASCADE")
     op.truncate_table("habilidade", "CASCADE")
+    op.truncate_table("comentario")
     repo.inserir_profissoes(lista_profissoes)
     repo_habilidade.inserir_habilidades(lista_habilidades)
 
     repo_usuario_profissao = UsuarioProfissaoRepository(db)
     repo_usuario_habilidade = UsuarioHabilidadeRepository(db)
+    repo_comentario = ComentarioRepository(db)
     usuarios = repo_usuario_profissao.obter_usuarios()
     profissoes = repo_usuario_profissao.obter_profissoes()
     habilidades = repo_usuario_habilidade.obter_habilidades()
+    projetos = repo_projeto.obter_projetos()
+
 
     if not usuarios or not profissoes:
         print("Nenhum usuário ou profissão encontrado no banco de dados.")
@@ -229,11 +281,24 @@ def main():
         escolhidas = random.sample(habilidades, k=min(3, len(habilidades)))  # Pelo menos 3 habilidades
         usuario_habilidades.extend([(hab, usuario) for hab in escolhidas])
 
+    # Associar um projeto a um funcionário e adicionar um comentário
+    comentarios = []
+    for usuario in usuarios:
+        for projeto in projetos:
+            tema = random.choice(temas)
+            adjetivo = random.choice(adjetivos)
+            complemento = random.choice(complementos)
+            texto = f"{tema} {adjetivo}. {complemento}"
+            comentarios.append((texto, projeto, usuario))
+
     # Inserir as associações na tabela usuario_profissao
     repo_usuario_profissao.inserir_usuario_profissoes(usuario_profissoes)
 
     # Inserir as associações na tabela usuario_profissao
     repo_usuario_habilidade.inserir_usuario_habilidades(usuario_habilidades)
+
+    # Inserir os comentários no banco de dados
+    repo_comentario.inserir_comentario(comentarios)
 
     # Fechar conexão
     db.close()
