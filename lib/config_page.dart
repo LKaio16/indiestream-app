@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'edicao-perfil_screen.dart' as edit;
 import 'sobre_nos.dart' as sobre;
+import './planos_page.dart';
 
 class PaginaConfiguracao extends StatefulWidget {
   @override
@@ -50,13 +51,21 @@ class _PaginaConfiguracaoState extends State<PaginaConfiguracao> {
               child: _criarBotao("Editar Perfil"),
             ),
             SizedBox(height: 15),
-            _criarBotao("Visualizar Planos"),
+            GestureDetector(
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => TelaPlanos()),
+                );
+              },
+              child: _criarBotao("Visualizar Planos"),
+            ),
             SizedBox(height: 15),
             GestureDetector(
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => sobre.PaginaSobre()), // Substitua com a tela correta
+                  MaterialPageRoute(builder: (context) => sobre.PaginaSobre()),
                 );
               },
               child: _criarBotao("Sobre nós"),
