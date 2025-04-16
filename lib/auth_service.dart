@@ -1,4 +1,3 @@
-// auth_service.dart
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
@@ -15,8 +14,13 @@ class AuthService {
     return prefs.getInt(_userIdKey);
   }
 
-  static Future<void> clearUserData() async {
+  static Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_userIdKey);
+    // await prefs.remove(_tokenKey);
+  }
+
+  static Future<void> clearUserData() async {
+    await logout(); // Agora clearUserData chama logout
   }
 }
