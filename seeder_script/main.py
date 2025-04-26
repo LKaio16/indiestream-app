@@ -3,6 +3,34 @@ import psycopg
 import pandas as pd
 from dotenv import load_dotenv
 import random
+import logging
+import colorlog
+
+class Logger:
+    @staticmethod
+    def get(nome=__name__):
+        logger = logging.getLogger(nome)
+        logger.setLevel(logging.DEBUG)
+
+        if not logger.handlers:
+            handler = logging.StreamHandler()
+            formatter = colorlog.ColoredFormatter(
+                '%(white)s%(asctime)s | %(log_color)s%(levelname)-8s%(reset)s %(blue)s%(message)s',
+                datefmt='%Y-%m-%d %H:%M:%S',
+                log_colors={
+                    'DEBUG': 'cyan',
+                    'INFO': 'green',
+                    'WARNING': 'yellow',
+                    'ERROR': 'red',
+                    'CRITICAL': 'red,bg_white',
+                }
+            )
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+
+        return logger
+
+log = Logger.get()
 
 load_dotenv()
 
@@ -22,7 +50,7 @@ class DatabaseConnection:
             )
             self.cursor = self.conn.cursor()
         except Exception as e:
-            print(f"Erro ao conectar ao banco de dados: {e}")
+            log.error(f"Erro ao conectar ao banco de dados: {e}")
 
     def close(self):
         """Fecha a conexão com o banco."""
@@ -41,9 +69,10 @@ class DatabaseOperation:
                 self.db.cursor.execute(f"TRUNCATE TABLE {tabela};")
             else:
                 self.db.cursor.execute(f"TRUNCATE TABLE {tabela} {opcao};")
-            print(f"A tabela '{tabela}' foi truncada com sucesso.")
+            #print(f"A tabela '{tabela}' foi truncada com sucesso.")
+            log.info(f"A tabela '{tabela}' foi truncada com sucesso.")
         except Exception as e:
-            print(f"Erro ao truncar tabela: {e}")
+            log.error(f"Erro ao truncar tabela: {e}")
             self.db.conn.rollback()
 
 class Profissao:
@@ -60,9 +89,9 @@ class ProfissaoRepository:
             query = "INSERT INTO profissao (id_profissao, nome) VALUES (%s, %s)"
             self.db.cursor.executemany(query, [(p.id_profissao, p.nome) for p in profissoes])
             self.db.conn.commit()
-            print("Dados salvos com sucesso na tabela 'profissao'.")
+            log.info("Dados salvos com sucesso na tabela 'profissao'.")
         except Exception as e:
-            print(f"Erro ao salvar dados no banco: {e}")
+            log.error(f"Erro ao salvar dados no banco: {e}")
             self.db.conn.rollback()
 
 class UsuarioProfissao:
@@ -81,7 +110,7 @@ class UsuarioProfissaoRepository:
             self.db.cursor.execute("SELECT id_usuario FROM usuario")
             return [row[0] for row in self.db.cursor.fetchall()]
         except Exception as e:
-            print(f"Erro ao buscar usuários: {e}")
+            log.error(f"Erro ao buscar usuários: {e}")
             return []
 
     def obter_profissoes(self):
@@ -89,7 +118,7 @@ class UsuarioProfissaoRepository:
             self.db.cursor.execute("SELECT id_profissao FROM profissao")
             return [row[0] for row in self.db.cursor.fetchall()]
         except Exception as e:
-            print(f"Erro ao buscar profissões: {e}")
+            log.error(f"Erro ao buscar profissões: {e}")
             return []
 
     def inserir_usuario_profissoes(self, usuario_profissoes):
@@ -97,9 +126,9 @@ class UsuarioProfissaoRepository:
             query = "INSERT INTO usuario_profissao (id_profissao, id_usuario) VALUES (%s, %s)"
             self.db.cursor.executemany(query, usuario_profissoes)
             self.db.conn.commit()
-            print("Dados salvos com sucesso na tabela 'usuario_profissao'.")
+            log.info("Dados salvos com sucesso na tabela 'usuario_profissao'.")
         except Exception as e:
-            print(f"Erro ao salvar dados no banco: {e}")
+            log.error(f"Erro ao salvar dados no banco: {e}")
             self.db.conn.rollback()
 
 class Habilidade:
@@ -116,9 +145,9 @@ class HabilidadeRepository:
             query = "INSERT INTO habilidade (id_habilidade, nome) VALUES (%s, %s)"
             self.db.cursor.executemany(query, [(h.id_habilidade, h.nome) for h in habilidades])
             self.db.conn.commit()
-            print("Dados salvos com sucesso na tabela 'habilidade'.")
+            log.info("Dados salvos com sucesso na tabela 'habilidade'.")
         except Exception as e:
-            print(f"Erro ao salvar dados no banco: {e}")
+            log.error(f"Erro ao salvar dados no banco: {e}")
             self.db.conn.rollback()
 
 class UsuarioHabilidade:
@@ -137,7 +166,7 @@ class UsuarioHabilidadeRepository:
             self.db.cursor.execute("SELECT id_usuario FROM usuario")
             return [row[0] for row in self.db.cursor.fetchall()]
         except Exception as e:
-            print(f"Erro ao buscar usuários: {e}")
+            log.error(f"Erro ao buscar usuários: {e}")
             return []
 
     def obter_habilidades(self):
@@ -145,7 +174,7 @@ class UsuarioHabilidadeRepository:
             self.db.cursor.execute("SELECT id_habilidade FROM habilidade")
             return [row[0] for row in self.db.cursor.fetchall()]
         except Exception as e:
-            print(f"Erro ao buscar habilidades: {e}")
+            log.error(f"Erro ao buscar habilidades: {e}")
             return []
 
     def inserir_usuario_habilidades(self, usuario_habilidades):
@@ -153,9 +182,9 @@ class UsuarioHabilidadeRepository:
             query = "INSERT INTO usuario_habilidade (id_habilidade, id_usuario) VALUES (%s, %s)"
             self.db.cursor.executemany(query, usuario_habilidades)
             self.db.conn.commit()
-            print("Dados salvos com sucesso na tabela 'usuario_habilidade'.")
+            log.info("Dados salvos com sucesso na tabela 'usuario_habilidade'.")
         except Exception as e:
-            print(f"Erro ao salvar dados no banco: {e}")
+            log.error(f"Erro ao salvar dados no banco: {e}")
             self.db.conn.rollback()
 
 class Comentario:
@@ -173,9 +202,9 @@ class ComentarioRepository:
             query = "INSERT INTO comentario (texto, id_projeto, id_usuario) VALUES (%s, %s, %s)"
             self.db.cursor.executemany(query, usuario_habilidades)
             self.db.conn.commit()
-            print("Dados salvos com sucesso na tabela 'comentario'.")
+            log.info("Dados salvos com sucesso na tabela 'comentario'.")
         except Exception as e:
-            print(f"Erro ao salvar dados no banco: {e}")
+            log.error(f"Erro ao salvar dados no banco: {e}")
             self.db.conn.rollback()
 class Projeto:
     def __init__(self, id_projeto, nome):
@@ -191,7 +220,7 @@ class ProjetoRepository:
             self.db.cursor.execute("SELECT id_projeto FROM projeto")
             return [row[0] for row in self.db.cursor.fetchall()]
         except Exception as e:
-            print(f"Erro ao buscar projetos: {e}")
+            log.error(f"Erro ao buscar projetos: {e}")
             return []
 
 def main():
@@ -261,11 +290,11 @@ def main():
 
 
     if not usuarios or not profissoes:
-        print("Nenhum usuário ou profissão encontrado no banco de dados.")
+        log.warning("Nenhum usuário ou profissão encontrado no banco de dados.")
         db.close()
         return
     if not usuarios or not habilidades:
-        print("Nenhum usuário ou habilidade encontrado no banco de dados.")
+        log.warning("Nenhum usuário ou habilidade encontrado no banco de dados.")
         db.close()
         return
 
