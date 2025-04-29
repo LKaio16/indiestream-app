@@ -55,14 +55,14 @@ class _PaginaConfiguracaoState extends State<PaginaConfiguracao> {
       ),
       body: Padding(
         padding: EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _criarItemToggle("Dark mode", isDarkMode, (value) {
-              setState(() {
-                isDarkMode = value;
-                _savePreferences();
-              });
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _criarItemToggle("Dark mode", isDarkMode, (value) {
+                setState(() {
+                  isDarkMode = value;
+                  _savePreferences();
+                });
             }, cardColor, textColor),
             SizedBox(height: 20),
             _criarItemFonte("Tamanho da Fonte", cardColor, textColor),
