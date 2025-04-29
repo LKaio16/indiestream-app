@@ -19,8 +19,24 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
+  bool isDarkMode = false;
 
-  // login_screen.dart (parte relevante)
+  @override
+  void initState() {
+    super.initState();
+    _loadThemePreference();
+  }
+
+  Future<void> _loadThemePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    final theme = prefs.getBool('config_darkMode') ?? false;
+    if (mounted) {
+      setState(() {
+        isDarkMode = theme;
+      });
+    }
+  }
+
   Future<void> _login() async {
     setState(() => _isLoading = true);
 
@@ -44,13 +60,10 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
-
         await AuthService.saveUserData(data['id']);
-
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(data['message'] ?? 'Login bem-sucedido')),
         );
-
         Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (context) => const HomeScreen()),
@@ -72,9 +85,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final backgroundColor = isDarkMode ? const Color(0xFF1D1D1D) : Colors.white;
+    final cardColor = isDarkMode ? Colors.grey[900] : Colors.grey[300];
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final hintColor = isDarkMode ? Colors.grey : Colors.black54;
+
     return Scaffold(
-      backgroundColor: Color(0xFF1D1D1D),
-      body  : Center(
+      backgroundColor: backgroundColor,
+      body: Center(
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -82,24 +100,20 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 GestureDetector(
-                  onTap: () {
-                    Navigator.push(
+                  onTap: () async {
+                    await Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => config.PaginaConfiguracao()), // Usando o alias para acessar a classe
+                      MaterialPageRoute(builder: (context) => config.PaginaConfiguracao()),
                     );
+                    _loadThemePreference(); // <- RECARREGA O TEMA APÓS VOLTAR
                   },
-                  child: Image.asset(
-                    'assets/logo.png',
-                    height: 80,
-                  ),
+                  child: Image.asset('assets/logo.png', height: 80),
                 ),
-
                 const SizedBox(height: 20),
-                const Text(
+                Text(
                   'Faça login em sua conta',
                   style: TextStyle(
-
-                    color: Colors.white,
+                    color: textColor,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
@@ -107,20 +121,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 20),
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: const Text(
-                    'Email',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  child: Text('Email', style: TextStyle(color: textColor)),
                 ),
                 const SizedBox(height: 5),
                 TextField(
                   controller: _emailController,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: textColor),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.grey[800],
+                    fillColor: cardColor,
                     hintText: 'Insira seu email',
-                    hintStyle: const TextStyle(color: Colors.grey),
+                    hintStyle: TextStyle(color: hintColor),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(30),
                       borderSide: BorderSide.none,
@@ -131,21 +142,18 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 10),
                 Align(
                   alignment: Alignment.centerLeft,
-                  child: const Text(
-                    'Senha',
-                    style: TextStyle(color: Colors.white),
-                  ),
+                  child: Text('Senha', style: TextStyle(color: textColor)),
                 ),
                 const SizedBox(height: 5),
                 TextField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: textColor),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: Colors.grey[900],
+                    fillColor: cardColor,
                     hintText: 'Insira sua senha',
-                    hintStyle: const TextStyle(color: Colors.grey),
+                    hintStyle: TextStyle(color: hintColor),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(30),
                       borderSide: BorderSide.none,
@@ -153,7 +161,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                        color: Colors.grey,
+                        color: hintColor,
                       ),
                       onPressed: () {
                         setState(() {
@@ -198,18 +206,12 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                const Text(
-                  '- OU -',
-                  style: TextStyle(color: Colors.grey),
-                ),
+                Text('- OU -', style: TextStyle(color: hintColor)),
                 const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      'Não possui conta?',
-                      style: TextStyle(color: Colors.grey),
-                    ),
+                    Text('Não possui conta?', style: TextStyle(color: hintColor)),
                     TextButton(
                       onPressed: () {
                         Navigator.push(
