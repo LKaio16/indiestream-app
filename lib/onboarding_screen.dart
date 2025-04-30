@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'login_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
@@ -11,6 +12,7 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  bool isDarkMode = false;
 
   final List<Map<String, String>> _pages = [
     {
@@ -30,6 +32,24 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     },
   ];
 
+  @override
+  void initState() {
+    super.initState();
+    _loadThemePreference();
+  }
+
+  Future<void> _loadThemePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isDarkMode = prefs.getBool('config_darkMode') ?? false;
+    });
+  }
+
+  Future<void> _saveThemePreference() async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setBool('config_darkMode', isDarkMode);
+  }
+
   void _nextPage() {
     if (_currentPage < _pages.length - 1) {
       _pageController.nextPage(
@@ -46,8 +66,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final backgroundColor = isDarkMode ? const Color(0xFF1D1D1D) : Colors.white;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+
     return Scaffold(
-      backgroundColor: Color(0xFF1D1D1D),
+      backgroundColor: backgroundColor,
       body: Column(
         children: [
           Expanded(
@@ -70,8 +93,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     const SizedBox(height: 20),
                     Text(
                       _pages[index]["title"]!,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: textColor,
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                       ),
@@ -82,7 +105,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       child: Text(
                         _pages[index]["description"]!,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.white70, fontSize: 16),
+                        style: TextStyle(color: textColor.withOpacity(0.7), fontSize: 16),
                       ),
                     ),
                   ],
