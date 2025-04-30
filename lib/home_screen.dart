@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:indiestream_app/projeto_create_screen.dart';
 import 'projetos_screen.dart';
 import 'pessoas_screen.dart';
 import 'auth_service.dart';
 import 'user_detalhes_screen.dart';
+
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -24,6 +26,13 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _selectedIndex = index;
     });
+  }
+
+  void _onAddButtonTapped() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const CriarProjetoScreen()),
+    );
   }
 
   Future<void> _navegarParaMeuPerfil() async {
@@ -57,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
               child:
-                  const Text('Cancelar', style: TextStyle(color: Colors.white)),
+              const Text('Cancelar', style: TextStyle(color: Colors.white)),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
@@ -159,22 +168,84 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
       ),
       body: _screens[_selectedIndex],
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.grey[900],
-        selectedItemColor: Colors.amber,
-        unselectedItemColor: Colors.white70,
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.work),
-            label: 'Projetos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Pessoas',
-          ),
-        ],
+      floatingActionButton: FloatingActionButton(
+        onPressed: _onAddButtonTapped, // Chamará a navegação
+        backgroundColor: Colors.amber,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add, color: Colors.black),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      bottomNavigationBar: BottomAppBar(
+        color: Colors.black,
+        shape: const CircularNotchedRectangle(),
+        notchMargin: 8.0,
+        padding: const EdgeInsets.symmetric(horizontal: 10.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: <Widget>[
+            Expanded(
+              child: InkWell(
+                onTap: () => _onItemTapped(0),
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: <Widget>[
+                      Icon(
+                        _selectedIndex == 0 ? Icons.work : Icons.work_outline,
+                        color: _selectedIndex == 0 ? Colors.amber : Colors.white70,
+                        size: 24.0,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Projetos',
+                        style: TextStyle(
+                          color: _selectedIndex == 0 ? Colors.amber : Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Expanded(
+              child: InkWell(
+                onTap: () => _onItemTapped(1),
+                splashColor: Colors.transparent,
+                highlightColor: Colors.transparent,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: <Widget>[
+                      Icon(
+                        _selectedIndex == 1 ? Icons.people : Icons.people_outline,
+                        color: _selectedIndex == 1 ? Colors.amber : Colors.white70,
+                        size: 24.0,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Pessoas',
+                        style: TextStyle(
+                          color: _selectedIndex == 1 ? Colors.amber : Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
