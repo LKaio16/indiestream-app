@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Este import pode não ser mais necessário nesta tela se AuthService lida com isso internamente
 import 'auth_service.dart';
 import 'cadastro_screen.dart';
-import 'config_page.dart' as config;
+import 'config_page.dart' as config; // Importado com alias
 import 'home_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -19,23 +19,14 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   bool _isLoading = false;
   bool _obscurePassword = true;
-  bool isDarkMode = false;
 
   @override
-  void initState() {
-    super.initState();
-    _loadThemePreference();
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
   }
 
-  Future<void> _loadThemePreference() async {
-    final prefs = await SharedPreferences.getInstance();
-    final theme = prefs.getBool('config_darkMode') ?? false;
-    if (mounted) {
-      setState(() {
-        isDarkMode = theme;
-      });
-    }
-  }
 
   Future<void> _login() async {
     setState(() => _isLoading = true);
@@ -53,30 +44,63 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse("http://localhost:8080/user/login"),
+        // Idealmente, use uma URL base de um arquivo de configuração
+        // Uri.parse("${config.backendBaseUrl}/user/login"),
+        Uri.parse("http://localhost:8080/user/login"), // Mantido o original por enquanto
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"email": email, "senha": password}),
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        await AuthService.saveUserData(data['id']);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(data['message'] ?? 'Login bem-sucedido')),
-        );
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
+        final data = jsonDecode(utf8.decode(response.bodyBytes)); // Decodifica com suporte a UTF8
+
+        // ASSUMINDO que o backend retorna 'token' e 'id' no corpo 200
+        final String? token = data['token']; // Obtém o token da resposta
+        final int? userId = data['id'];     // Obtém o ID do usuário da resposta
+
+        if (token != null && userId != null) {
+          // Salva o token de forma segura (usando flutter_secure_storage)
+          await AuthService.saveToken(token);
+          // Salva o ID do usuário (usando SharedPreferences)
+          await AuthService.saveUserId(userId);
+
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(data['message'] ?? 'Login bem-sucedido')),
+          );
+
+          // Navega para a HomeScreen, substituindo a tela de login
+          // Usando pushReplacementNamed para consistência com o roteamento no main.dart
+          Navigator.pushReplacementNamed(context, '/home');
+
+        } else {
+          // Resposta 200, mas faltando dados essenciais
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Resposta do servidor incompleta: Token ou ID ausente.')),
+          );
+        }
+
       } else {
-        final errorData = jsonDecode(response.body);
+        // Lida com respostas não-200
+        String errorMessage = 'Erro desconhecido';
+        try {
+          // Tenta extrair a mensagem de erro do corpo da resposta se for JSON
+          final errorData = jsonDecode(utf8.decode(response.bodyBytes));
+          errorMessage = errorData['message'] ?? 'Erro no login';
+        } catch (e) {
+          // Se não for JSON ou a mensagem não existir
+          errorMessage = 'Erro no servidor: Status ${response.statusCode}';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorData['message'] ?? 'Credenciais inválidas')),
+          SnackBar(content: Text(errorMessage)),
         );
       }
     } catch (e) {
+      // Lida com erros de conexão ou outras exceções
+      print("Erro durante o login: $e"); // Log do erro para depuração
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erro ao conectar ao servidor')),
+        const SnackBar(content: Text('Erro ao conectar ao servidor. Verifique a conexão e o endereço.')),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -85,13 +109,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final backgroundColor = isDarkMode ? const Color(0xFF1D1D1D) : Colors.white;
-    final cardColor = isDarkMode ? Colors.grey[900] : Colors.grey[300];
-    final textColor = isDarkMode ? Colors.white : Colors.black;
-    final hintColor = isDarkMode ? Colors.grey : Colors.black54;
-
     return Scaffold(
-      backgroundColor: backgroundColor,
+      backgroundColor: Color(0xFF1D1D1D),
       body: Center(
         child: SingleChildScrollView(
           child: Padding(
@@ -100,38 +119,44 @@ class _LoginScreenState extends State<LoginScreen> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 GestureDetector(
-                  onTap: () async {
-                    await Navigator.push(
+                  onTap: () {
+                    Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => config.PaginaConfiguracao()),
                     );
-                    _loadThemePreference(); // <- RECARREGA O TEMA APÓS VOLTAR
                   },
-                  child: Image.asset('assets/logo.png', height: 80),
+                  child: Image.asset(
+                    'assets/logo.png',
+                    height: 80,
+                  ),
                 ),
+
                 const SizedBox(height: 20),
-                Text(
+                const Text(
                   'Faça login em sua conta',
                   style: TextStyle(
-                    color: textColor,
+                    color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 20),
-                Align(
+                const Align( // Removido const desnecessário se houver algum erro
                   alignment: Alignment.centerLeft,
-                  child: Text('Email', style: TextStyle(color: textColor)),
+                  child: Text(
+                    'Email',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
                 const SizedBox(height: 5),
                 TextField(
                   controller: _emailController,
-                  style: TextStyle(color: textColor),
+                  style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: cardColor,
+                    fillColor: Colors.grey[800],
                     hintText: 'Insira seu email',
-                    hintStyle: TextStyle(color: hintColor),
+                    hintStyle: const TextStyle(color: Colors.grey),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(30),
                       borderSide: BorderSide.none,
@@ -140,20 +165,23 @@ class _LoginScreenState extends State<LoginScreen> {
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 10),
-                Align(
+                const Align( // Removido const desnecessário se houver algum erro
                   alignment: Alignment.centerLeft,
-                  child: Text('Senha', style: TextStyle(color: textColor)),
+                  child: Text(
+                    'Senha',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
                 const SizedBox(height: 5),
                 TextField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
-                  style: TextStyle(color: textColor),
+                  style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
                     filled: true,
-                    fillColor: cardColor,
+                    fillColor: Colors.grey[900],
                     hintText: 'Insira sua senha',
-                    hintStyle: TextStyle(color: hintColor),
+                    hintStyle: const TextStyle(color: Colors.grey),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(30),
                       borderSide: BorderSide.none,
@@ -161,7 +189,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     suffixIcon: IconButton(
                       icon: Icon(
                         _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                        color: hintColor,
+                        color: Colors.grey,
                       ),
                       onPressed: () {
                         setState(() {
@@ -175,7 +203,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton(
-                    onPressed: () {},
+                    onPressed: () {}, // Esqueceu a senha action
                     child: const Text(
                       'Esqueceu a senha',
                       style: TextStyle(color: Colors.yellow),
@@ -206,12 +234,18 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text('- OU -', style: TextStyle(color: hintColor)),
+                const Text(
+                  '- OU -',
+                  style: TextStyle(color: Colors.grey),
+                ),
                 const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Não possui conta?', style: TextStyle(color: hintColor)),
+                    const Text(
+                      'Não possui conta?',
+                      style: TextStyle(color: Colors.grey),
+                    ),
                     TextButton(
                       onPressed: () {
                         Navigator.push(
