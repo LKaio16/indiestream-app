@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'home_screen.dart';
 import 'login_screen.dart';
 import 'onboarding_screen.dart';
@@ -15,7 +14,7 @@ void main() async {
 
   runApp(
     ChangeNotifierProvider(
-      create: (_) => ThemeProvider(), // carrega o tema salvo
+      create: (_) => ThemeProvider(),
       child: MyApp(isAuthenticated: isAuthenticated),
     ),
   );

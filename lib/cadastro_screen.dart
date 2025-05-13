@@ -9,11 +9,12 @@ class CadastroScreen extends StatefulWidget {
 class _CadastroScreenState extends State<CadastroScreen> {
   String? perfilSelecionado;
   final List<String> listaPerfis = ["Artista", "Fã", "Produtor", "Outro"];
+  bool isDark = true; // Variável para controlar o tema escuro ou claro
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF1D1D1D),
+      backgroundColor: isDark ? Color(0xFF1D1D1D) : Colors.white, // Cor de fundo baseada no tema
       body: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -22,16 +23,43 @@ class _CadastroScreenState extends State<CadastroScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               // ---- LOGO ----
-            Image.asset(
-            'assets/logo.png',
-              height: 80,
-            ),
+              Image.asset(
+                'assets/logo.png',
+                height: 80,
+              ),
               const SizedBox(height: 20),
 
               // ---- TÍTULO ----
               Text(
                 "Crie sua Conta",
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.grey : Colors.black, // Cor do texto baseada no tema
+                ),
+              ),
+              SizedBox(height: 15),
+
+              // ---- SWITCH PARA ALTERAR O TEMA ----
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Text(
+                    "Modo Escuro",
+                    style: TextStyle(
+                      color: isDark ? Colors.white : Colors.black, // Cor do texto baseada no tema
+                    ),
+                  ),
+                  Switch(
+                    value: isDark,
+                    onChanged: (value) {
+                      setState(() {
+                        isDark = value; // Alterna entre os temas
+                      });
+                    },
+                    activeColor: Colors.yellow,
+                  ),
+                ],
               ),
               SizedBox(height: 15),
 
@@ -44,28 +72,34 @@ class _CadastroScreenState extends State<CadastroScreen> {
               // ---- SELEÇÃO DE PERFIL ----
               Align(
                 alignment: Alignment.centerLeft,
-                child: Text("Profissão", style: TextStyle(color: Colors.white, fontSize: 16)),
+                child: Text(
+                  "Profissão",
+                  style: TextStyle(
+                    color: isDark ? Colors.white : Colors.black, // Cor do texto baseada no tema
+                    fontSize: 16,
+                  ),
+                ),
               ),
               Container(
                 width: double.infinity,
                 padding: EdgeInsets.symmetric(horizontal: 10),
                 margin: EdgeInsets.only(top: 5, bottom: 15),
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: isDark ? Colors.grey[800] : Colors.white, // Cor de fundo do dropdown
                   borderRadius: BorderRadius.circular(25),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
                     value: perfilSelecionado,
-                    hint: Text("Selecione seu perfil", style: TextStyle(color: Colors.black)),
-                    icon: Icon(Icons.arrow_drop_down, color: Colors.black), // Ícone de seta
+                    hint: Text("Selecione seu perfil", style: TextStyle(color: isDark ? Colors.white : Colors.black)),
+                    icon: Icon(Icons.arrow_drop_down, color: isDark ? Colors.white : Colors.black),
                     items: listaPerfis.map((String valor) {
                       return DropdownMenuItem<String>(
                         value: valor,
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(valor, style: TextStyle(color: Colors.black)),
+                            Text(valor, style: TextStyle(color: isDark ? Colors.white : Colors.black)),
                           ],
                         ),
                       );
@@ -90,14 +124,18 @@ class _CadastroScreenState extends State<CadastroScreen> {
                 onPressed: () {},
                 child: Text(
                   "Avançar",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.black),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: isDark ? Colors.black : Colors.white, // Cor do texto no botão
+                  ),
                 ),
               ),
               SizedBox(height: 20),
               // ------ Separação "OU" ------
               Text(
                 "- OU -",
-                style: TextStyle(color: Colors.grey),
+                style: TextStyle(color: isDark ? Colors.white : Colors.grey),
               ),
 
               SizedBox(height: 10),
@@ -108,7 +146,7 @@ class _CadastroScreenState extends State<CadastroScreen> {
                 children: [
                   Text(
                     "Já possui conta? ",
-                    style: TextStyle(color: Colors.grey, fontSize: 14),
+                    style: TextStyle(color: isDark ? Colors.white : Colors.grey, fontSize: 14),
                   ),
                   GestureDetector(
                     onTap: () {
@@ -141,15 +179,15 @@ class _CadastroScreenState extends State<CadastroScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(rotulo, style: TextStyle(color: Colors.white, fontSize: 16)),
+        Text(rotulo, style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16)),
         SizedBox(height: 5),
         TextField(
           obscureText: isSenha,
           decoration: InputDecoration(
             hintText: dica,
-            hintStyle: TextStyle(color: Colors.grey),
+            hintStyle: TextStyle(color: isDark ? Colors.grey : Colors.black),
             filled: true,
-            fillColor: Colors.white,
+            fillColor: isDark ? Colors.grey[800] : Colors.white, // Cor de fundo do campo de texto
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(25),
               borderSide: BorderSide.none,
