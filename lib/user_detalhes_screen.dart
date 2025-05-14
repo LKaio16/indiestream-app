@@ -1,10 +1,12 @@
+// ignore_for_file: prefer_const_constructors, prefer_const_literals_to_create_immutables
+
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
-import 'auth_service.dart';
-import 'projeto_detalhes_screen.dart';
+import 'auth_service.dart'; // Certifique-se de que este import está correto
+import 'projeto_detalhes_screen.dart'; // Importa Projeto e Usuario (verifique se estão definidos aqui)
 
 class UserDetalhesScreen extends StatefulWidget {
   final String userId;
@@ -16,11 +18,13 @@ class UserDetalhesScreen extends StatefulWidget {
 }
 
 class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
-  Map<String, dynamic>? _user;
+  Map<String, dynamic>? _user; // The user whose profile is being viewed
+  Usuario? _usuarioAtualLogado; // The currently logged-in user
   List<dynamic> _projetos = [];
   List<dynamic> _habilidades = [];
   List<dynamic> _obrasFavoritas = [];
-  bool _isLoading = true;
+  bool _isLoadingUserData = true; // Loading state for the viewed user's data
+  bool _isLoadingCurrentUser = true; // Loading state for the logged-in user's data
   bool _isCurrentUser = false;
   int _paginaAtual = 1;
   final int _itensPorPagina = 3;
@@ -28,10 +32,15 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
   @override
   void initState() {
     super.initState();
-    _carregarDados();
+    _carregarDadosUsuarioVisualizado(); // Load the user profile being viewed
+    _carregarUsuarioLogado(); // Load the currently logged-in user
   }
 
-  Future<void> _carregarDados() async {
+  // Function to fetch the user whose profile is being viewed
+  Future<void> _carregarDadosUsuarioVisualizado() async {
+    setState(() {
+      _isLoadingUserData = true;
+    });
     try {
       final userResponse = await http.get(
         Uri.parse("http://localhost:8080/user/${widget.userId}"),
@@ -46,11 +55,7 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
           _obrasFavoritas = userData["obrasFavoritas"] ?? [];
         });
 
-        final currentUserId = await AuthService.getUserId();
-        setState(() {
-          _isCurrentUser = currentUserId.toString() == widget.userId;
-        });
-
+        // Fetch projects associated with the viewed user
         final projetosResponse = await http.get(
           Uri.parse("http://localhost:8080/projetos?userId=${widget.userId}"),
         );
@@ -59,45 +64,156 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
           setState(() {
             _projetos = json.decode(utf8.decode(projetosResponse.bodyBytes));
           });
+        } else {
+          print("Falha ao carregar projetos do usuário: Status ${projetosResponse.statusCode}");
+          setState(() {
+            _projetos = [];
+          });
         }
+
+
+      } else {
+        print("Falha ao carregar usuário: Status ${userResponse.statusCode}");
+        setState(() {
+          _user = null; // Indicate user not found
+          _projetos = [];
+          _habilidades = [];
+          _obrasFavoritas = [];
+        });
       }
     } catch (e) {
-      print("Erro ao carregar dados: $e");
+      print("Erro ao carregar dados do usuário: $e");
+      setState(() {
+        _user = null; // Indicate error loading user
+        _projetos = [];
+        _habilidades = [];
+        _obrasFavoritas = [];
+      });
     } finally {
       setState(() {
-        _isLoading = false;
+        _isLoadingUserData = false;
       });
     }
   }
 
-  Widget _buildSocialIcon(String url) {
-    if (url.contains("facebook")) {
-      return const FaIcon(FontAwesomeIcons.facebook,
-          color: Colors.blue, size: 24);
-    } else if (url.contains("twitter") || url.contains("x.com")) {
-      return const FaIcon(FontAwesomeIcons.xTwitter,
-          color: Colors.black, size: 24);
-    } else if (url.contains("instagram")) {
-      return const FaIcon(FontAwesomeIcons.instagram,
-          color: Colors.purple, size: 24);
-    } else if (url.contains("tiktok")) {
-      return const FaIcon(FontAwesomeIcons.tiktok,
-          color: Colors.black, size: 24);
-    } else if (url.contains("linkedin")) {
-      return const FaIcon(FontAwesomeIcons.linkedin,
-          color: Colors.blue, size: 24);
-    } else if (url.contains("pinterest")) {
-      return const FaIcon(FontAwesomeIcons.pinterest,
-          color: Colors.red, size: 24);
-    } else if (url.contains("youtube")) {
-      return const FaIcon(FontAwesomeIcons.youtube,
-          color: Colors.red, size: 24);
-    } else {
-      // Email ou genérico
-      return const FaIcon(FontAwesomeIcons.envelope,
-          color: Colors.grey, size: 24);
+  // Function to fetch the currently logged-in user's details
+  Future<void> _carregarUsuarioLogado() async {
+    setState(() {
+      _isLoadingCurrentUser = true;
+    });
+
+    int? userIdInt = await AuthService.getUserId();
+
+    if (userIdInt == null) {
+      print("UserDetalhesScreen: Nenhum ID de usuário logado encontrado no AuthService.");
+      if(mounted) {
+        setState(() {
+          _usuarioAtualLogado = null; // No logged-in user
+          _isLoadingCurrentUser = false;
+          // Determine if the viewed user is the current user
+          _isCurrentUser = false;
+        });
+      }
+      return;
+    }
+
+    String userIdString = userIdInt.toString();
+
+    // TODO: IMPLEMENTAR BUSCA REAL DOS DETALHES DO USUÁRIO LOGADO
+    // Você precisa buscar o NOME, IMAGEMURL e outros detalhes
+    // do usuário logado (userIdString) da sua API ou estado global.
+    // Substitua a chamada abaixo pela sua lógica real.
+    // Exemplo:
+    // final detalhesDoUsuario = await suaApi.buscarDetalhesUsuario(userIdString);
+    // final nomeUsuario = detalhesDoUsuario['nome'];
+    // final imagemUrlUsuario = detalhesDoUsuario['imagemUrl'];
+    // final funcaoUsuario = detalhesDoUsuario['funcao'];
+
+    print("UserDetalhesScreen: Usuário logado ID $userIdString encontrado. Usando dados placeholder."); // Log para depuração
+
+    if(mounted) {
+      setState(() {
+        _usuarioAtualLogado = Usuario(
+          id: userIdString, // ID CORRETO E COMO STRING!
+          nome: "Nome Real do Usuário Logado", // SUBSTITUA!
+          imagemUrl: "https://i.ibb.co/PG4G5q3/Ellipse-1.png", // SUBSTITUA!
+          funcao: "Função Real Logado", // SUBSTITUA! (opcional)
+        );
+        _isLoadingCurrentUser = false;
+        // Determine if the viewed user is the current user
+        _isCurrentUser = userIdString == widget.userId;
+      });
     }
   }
+
+
+  // Helper function to parse a single Usuario from map (copied from ProjetosScreen)
+  Usuario _parseUsuarioFromMap(Map<String, dynamic>? userData) {
+    if (userData == null) {
+      print(
+          "Aviso: Dados do usuário (criador/membro) ausentes na API, usando placeholders.");
+      return Usuario(
+        id: 'unknown_id_${DateTime.now().millisecondsSinceEpoch}',
+        nome: 'Usuário Desconhecido',
+        imagemUrl: '',
+        funcao: null,
+      );
+    }
+    return Usuario(
+      id: userData['id']?.toString() ??
+          'fallback_id_${DateTime.now().millisecondsSinceEpoch}',
+      nome: userData['nome']?.toString() ?? 'Nome Indisponível',
+      imagemUrl: userData['imagemUrl']?.toString() ?? '',
+      funcao: userData['funcao']?.toString(),
+    );
+  }
+
+  // Helper function to parse a list of Usuarios from a list of maps (copied from ProjetosScreen)
+  List<Usuario> _parseUsuariosListFromMap(List<dynamic>? usersDataList) {
+    if (usersDataList == null) {
+      return [];
+    }
+    return usersDataList
+        .where((item) => item is Map<String, dynamic>)
+        .map((userData) => _parseUsuarioFromMap(userData as Map<String, dynamic>))
+        .toList();
+  }
+
+
+  Widget _buildSocialIcon(String url) {
+    IconData icon;
+    Color color;
+
+    if (url.contains("facebook")) {
+      icon = FontAwesomeIcons.facebook;
+      color = Colors.blue;
+    } else if (url.contains("twitter") || url.contains("x.com")) {
+      icon = FontAwesomeIcons.xTwitter;
+      color = Colors.white; // X logo is often white on dark backgrounds
+    } else if (url.contains("instagram")) {
+      icon = FontAwesomeIcons.instagram;
+      color = Colors.purple;
+    } else if (url.contains("tiktok")) {
+      icon = FontAwesomeIcons.tiktok;
+      color = Colors.black; // Tiktok logo is black/white/blue/red
+    } else if (url.contains("linkedin")) {
+      icon = FontAwesomeIcons.linkedin;
+      color = Colors.blue;
+    } else if (url.contains("pinterest")) {
+      icon = FontAwesomeIcons.pinterest;
+      color = Colors.red;
+    } else if (url.contains("youtube")) {
+      icon = FontAwesomeIcons.youtube;
+      color = Colors.red;
+    } else {
+      // Default for email or unknown links
+      icon = FontAwesomeIcons.link; // Use a generic link icon
+      color = Colors.grey;
+    }
+
+    return FaIcon(icon, color: color, size: 24);
+  }
+
 
   Widget _buildHabilidadesSection() {
     if (_habilidades.isEmpty) {
@@ -105,7 +221,7 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Ajuste padding
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -151,7 +267,7 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
     }
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8), // Ajuste padding
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -232,7 +348,8 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
+    // Show loading indicator if either user data or current user data is loading
+    if (_isLoadingUserData || _isLoadingCurrentUser) {
       return Scaffold(
         backgroundColor: Colors.black,
         body: const Center(
@@ -241,21 +358,30 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
       );
     }
 
+    // Show error if the viewed user's data failed to load
     if (_user == null) {
       return Scaffold(
         backgroundColor: Colors.black,
         appBar: AppBar(
-          title: const Text("Usuário não encontrado"),
+          title: const Text("Erro ao carregar usuário"), // Adjusted title
           backgroundColor: Colors.grey[900],
+          iconTheme: const IconThemeData(color: Colors.white),
         ),
         body: const Center(
           child: Text(
-            "Usuário não encontrado",
+            "Não foi possível carregar os dados do usuário.", // Adjusted message
             style: TextStyle(color: Colors.white),
+            textAlign: TextAlign.center,
           ),
         ),
       );
     }
+
+    // Handle case where logged-in user data failed to load but viewed user loaded
+    // The ProjectDetailsScreen will need the logged-in user, so we should inform the user
+    // or prevent navigation if the logged-in user is null.
+    // For now, we'll allow viewing the profile but navigation to project details
+    // will check for the logged-in user.
 
     final projetosPagina = _projetos.sublist(
       (_paginaAtual - 1) * _itensPorPagina,
@@ -286,10 +412,11 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
                     children: [
                       CircleAvatar(
                         radius: 50,
-                        backgroundImage: _user!["imagemUrl"] != null
+                        backgroundColor: Colors.grey[700], // Placeholder background
+                        backgroundImage: _user!["imagemUrl"] != null && _user!["imagemUrl"].isNotEmpty
                             ? NetworkImage(_user!["imagemUrl"])
                             : null,
-                        child: _user!["imagemUrl"] == null
+                        child: (_user!["imagemUrl"] == null || _user!["imagemUrl"].isEmpty)
                             ? const FaIcon(FontAwesomeIcons.user,
                             size: 40, color: Colors.white)
                             : null,
@@ -300,7 +427,7 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _user!["nome"],
+                              _user!["nome"] ?? "Nome Indisponível",
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 24,
@@ -318,13 +445,12 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
                             ),
                             const SizedBox(height: 16),
                             if (_user!["redesSociais"] != null &&
-                                _user!["redesSociais"].isNotEmpty)
+                                (_user!["redesSociais"] as List).isNotEmpty)
                               Wrap(
                                 spacing: 12,
                                 runSpacing: 8,
                                 children: (_user!["redesSociais"] as List)
-                                    .map<Widget>(
-                                        (rede) => _buildSocialIcon(rede))
+                                    .map<Widget>((rede) => _buildSocialIcon(rede))
                                     .toList(),
                               )
                             else
@@ -348,16 +474,18 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
                           const SizedBox(width: 4),
                           Text(
                             _user!["cidadeNome"] != null
-                                ? "${_user!["cidadeNome"]}, ${_user!["estadoNome"]}"
+                                ? "${_user!["cidadeNome"]}, ${_user!["estadoNome"] ?? ''}" // Added null check for estadoNome
                                 : "Localização não informada",
                             style: const TextStyle(color: Colors.white70),
                           ),
                         ],
                       ),
+                      // Only show Impulsionar button if it's the current user's profile
                       if (_isCurrentUser)
                         ElevatedButton.icon(
                           onPressed: () {
-                            // Lógica para impulsionar perfil
+                            // TODO: Lógica para impulsionar perfil
+                            print("Botão Impulsionar Perfil pressionado.");
                           },
                           icon: const FaIcon(FontAwesomeIcons.bolt, size: 14),
                           label: const Text("Impulsionar"),
@@ -442,12 +570,14 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
                           ),
                         ],
                       ),
-                      Text(
-                        "${_projetos.length} Projetos",
-                        style: const TextStyle(
-                          color: Colors.white70,
+                      // Display project count only if projects are loaded
+                      if (_projetos.isNotEmpty || !_isLoadingUserData) // Show count if loaded or if load failed but list is empty
+                        Text(
+                          "${_projetos.length} Projetos",
+                          style: const TextStyle(
+                            color: Colors.white70,
+                          ),
                         ),
-                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -456,20 +586,52 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
                   if (_projetos.isEmpty)
                     const Center(
                       child: Text(
-                        "Nenhum projeto encontrado",
+                        "Nenhum projeto encontrado para este usuário.", // Adjusted message
                         style: TextStyle(color: Colors.white70),
+                        textAlign: TextAlign.center,
                       ),
                     )
                   else
                     Column(
-                      children: projetosPagina.map((projeto) {
+                      children: projetosPagina.map((projetoData) {
+                        // Parse project details to a Projeto object for navigation
+                        final usuarioCriadorData = projetoData["usuarioCriador"] as Map<String, dynamic>?;
+                        Usuario criadorDoProjeto = _parseUsuarioFromMap(usuarioCriadorData);
+
+                        List<Usuario> usuariosSolicitantes = _parseUsuariosListFromMap(projetoData["usuariosSolicitantes"] as List<dynamic>?);
+                        List<Usuario> pessoasEnvolvidas = _parseUsuariosListFromMap(projetoData["pessoasEnvolvidas"] as List<dynamic>?);
+
+
+                        final Projeto projetoParaDetalhes = Projeto(
+                          id: projetoData["id"]?.toString() ?? '',
+                          titulo: projetoData["titulo"]?.toString() ?? "Título Indisponível",
+                          descricao: projetoData["descricao"]?.toString() ?? "Descrição Indisponível",
+                          localizacao: projetoData["localizacao"]?.toString() ?? "Localização Indisponível",
+                          imagemUrl: projetoData["imagemUrl"]?.toString() ?? '',
+                          tipo: projetoData["tipo"]?.toString() ?? "Tipo Desconhecido",
+                          status: projetoData["status"]?.toString() ?? "Status Desconhecido",
+                          usuarioCriador: criadorDoProjeto,
+                          usuariosSolicitantes: usuariosSolicitantes,
+                          pessoasEnvolvidas: pessoasEnvolvidas,
+                        );
+
+
                         return GestureDetector(
                           onTap: () {
+                            // Check if the logged-in user data is available before navigating
+                            if (_usuarioAtualLogado == null) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text("Aguarde, carregando dados do seu usuário..."))
+                              );
+                              return; // Prevent navigation if logged-in user is not loaded
+                            }
+
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => ProjetoDetalhesScreen(
-                                  projetoId: projeto["id"].toString(),
+                                builder: (context) => ProjectDetailsScreen(
+                                  projeto: projetoParaDetalhes, // Pass the full Projeto object
+                                  usuarioAtual: _usuarioAtualLogado!, // Pass the logged-in user
                                 ),
                               ),
                             );
@@ -484,7 +646,7 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
                                   ClipRRect(
                                     borderRadius: BorderRadius.circular(8),
                                     child: CachedNetworkImage(
-                                      imageUrl: projeto["imagemUrl"],
+                                      imageUrl: projetoData["imagemUrl"] ?? '', // Use imagemUrl from data
                                       width: 80,
                                       height: 80,
                                       fit: BoxFit.cover,
@@ -514,7 +676,7 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
                                       CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          projeto["titulo"],
+                                          projetoData["titulo"] ?? "Título Indisponível", // Use titulo from data
                                           style: const TextStyle(
                                             color: Colors.white,
                                             fontSize: 18,
@@ -525,11 +687,11 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
                                         Row(
                                           children: [
                                             FaIcon(
-                                              projeto["status"] == "Concluído"
+                                              projetoData["status"] == "Concluído"
                                                   ? FontAwesomeIcons.circleCheck
                                                   : FontAwesomeIcons
                                                   .circleNotch,
-                                              color: projeto["status"] ==
+                                              color: projetoData["status"] ==
                                                   "Concluído"
                                                   ? Colors.green
                                                   : Colors.amber,
@@ -537,10 +699,10 @@ class _UserDetalhesScreenState extends State<UserDetalhesScreen> {
                                             ),
                                             const SizedBox(width: 6),
                                             Text(
-                                              projeto["status"] ??
+                                              projetoData["status"] ??
                                                   "Status não informado",
                                               style: TextStyle(
-                                                color: projeto["status"] ==
+                                                color: projetoData["status"] ==
                                                     "Concluído"
                                                     ? Colors.green
                                                     : Colors.amber,
