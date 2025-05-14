@@ -1,66 +1,84 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'theme_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class TelaPlanos extends StatelessWidget {
+class TelaPlanos extends StatefulWidget {
+  @override
+  _TelaPlanosState createState() => _TelaPlanosState();
+}
+
+class _TelaPlanosState extends State<TelaPlanos> {
+  bool isDarkMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTheme();
+  }
+
+  // Carrega a preferência do tema (modo claro ou escuro) da memória
+  void _loadTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isDarkMode = prefs.getBool('config_darkMode') ?? false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    final themeProvider = Provider.of<ThemeProvider>(context);
-    final theme = Theme.of(context);
+    final theme = isDarkMode ? ThemeData.dark() : ThemeData.light(); // Muda o tema baseado na preferência
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: theme.appBarTheme.backgroundColor ?? theme.primaryColor,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: theme.iconTheme.color),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Image.asset('assets/logo.png', height: 40),
-          ],
-        ),
-        centerTitle: true,
-        actions: [
-          Switch(
-            value: themeProvider.isDarkMode,
-            onChanged: (_) => themeProvider.toggleTheme(),
+    return MaterialApp(
+      theme: theme, // Aplica o tema conforme a preferência
+      home: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        appBar: AppBar(
+          backgroundColor: theme.appBarTheme.backgroundColor ?? theme.primaryColor,
+          elevation: 0,
+          automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: theme.iconTheme.color),
+            onPressed: () => Navigator.pop(context),
           ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            SizedBox(height: 20),
-            Text(
-              "Conheça nossos Planos",
-              style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 30),
-            _buildPlanoCard(
-              context,
-              cor: Colors.lightBlueAccent,
-              icone: Icons.workspace_premium,
-              titulo: "Plano Básico",
-              preco: "Gratuito",
-              descricao: "Benefícios\nDireito a adicionar apenas 1 projeto por vez\nLimitação de envio de convites de: 5 projetos",
-            ),
-            SizedBox(height: 20),
-            _buildPlanoCard(
-              context,
-              cor: Colors.amberAccent,
-              icone: Icons.diamond,
-              titulo: "Plano Premium Mensal",
-              preco: "R\$ 50/mês",
-              descricao: "Benefícios\nDireito a adicionar projetos de maneira ilimitada\nSem limitação de envio de convites",
-            ),
-          ],
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset('assets/logo.png', height: 40),
+            ],
+          ),
+          centerTitle: true,
+        ),
+        body: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              SizedBox(height: 20),
+              Text(
+                "Conheça nossos Planos",
+                style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 30),
+              _buildPlanoCard(
+                context,
+                cor: Colors.lightBlueAccent,
+                icone: Icons.workspace_premium,
+                titulo: "Plano Básico",
+                preco: "Gratuito",
+                descricao:
+                "Benefícios\n• Direito a adicionar apenas 1 projeto por vez\n• Limitação de envio de convites de: 5 projetos",
+              ),
+              SizedBox(height: 20),
+              _buildPlanoCard(
+                context,
+                cor: Colors.amberAccent,
+                icone: Icons.diamond,
+                titulo: "Plano Premium Mensal",
+                preco: "R\$ 50/mês",
+                descricao:
+                "Benefícios\n• Direito a adicionar projetos de maneira ilimitada\n• Sem limitação de envio de convites",
+              ),
+            ],
+          ),
         ),
       ),
     );

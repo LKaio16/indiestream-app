@@ -1,103 +1,122 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'theme_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class PaginaSobre extends StatelessWidget {
+class PaginaSobre extends StatefulWidget {
+  @override
+  _PaginaSobreState createState() => _PaginaSobreState();
+}
+
+class _PaginaSobreState extends State<PaginaSobre> {
+  bool isDarkMode = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadTheme();
+  }
+
+  // Carrega a preferência de tema (escuro ou claro) do SharedPreferences
+  void _loadTheme() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      isDarkMode = prefs.getBool('config_darkMode') ?? false;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, _) {
-        final isDark = themeProvider.isDarkMode;
-        final textColor = isDark ? Colors.white : Colors.black;
-        final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final theme = isDarkMode ? ThemeData.dark() : ThemeData.light(); // Muda o tema conforme a preferência
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final backgroundColor = theme.scaffoldBackgroundColor;
 
-        return Scaffold(
-          backgroundColor: backgroundColor,
-          appBar: AppBar(
-            backgroundColor: isDark ? Colors.black : Colors.white,
-            elevation: 0,
-            leading: IconButton(
-              icon: Icon(Icons.arrow_back, color: textColor),
-              onPressed: () {
-                Navigator.pop(context);
-              },
-            ),
-            title: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Image.asset('assets/logo.png', height: 40),
-              ],
-            ),
-            centerTitle: true,
+    return MaterialApp(
+      theme: theme, // Aplica o tema conforme a preferência
+      home: Scaffold(
+        backgroundColor: backgroundColor,
+        appBar: AppBar(
+          backgroundColor: isDarkMode ? Colors.black : Colors.white,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: textColor),
+            onPressed: () {
+              Navigator.pop(context);
+            },
           ),
-          body: SingleChildScrollView(
-            child: Column(
-              children: [
-                Container(
-                  color: isDark ? Colors.grey[800] : Colors.grey[300],
-                  padding: EdgeInsets.all(10),
-                  child: Center(
-                    child: Text(
-                      "Aqui você pode",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: textColor,
-                      ),
-                    ),
-                  ),
-                ),
-                Container(
-                  color: Colors.yellow,
-                  padding: EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      _criarOpcao(Icons.people, "Conectar-se com profissionais da área", isDark),
-                      _criarOpcao(Icons.lightbulb, "Expressar sua criatividade", isDark),
-                      _criarOpcao(Icons.video_library, "Catalogar Produções Independentes", isDark),
-                      _criarOpcao(Icons.library_books, "Catalogar Produções Independentes", isDark),
-                    ],
-                  ),
-                ),
-                Container(
-                  color: isDark ? Colors.grey[800] : Colors.grey[300],
-                  padding: EdgeInsets.all(10),
-                  child: Center(
-                    child: Text(
-                      "Criadores do Aplicativo",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: textColor,
-                      ),
-                    ),
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.all(16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceAround,
-                    children: [
-                      _criarAvatar("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQI3J8NKYVOAuvW7i5ndqRz3znDPK6ts3W8QA&s", "Mário", "Engenheiro de Requisitos", isDark),
-                      _criarAvatar("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQI3J8NKYVOAuvW7i5ndqRz3znDPK6ts3W8QA&s", "Manoel", "Tester", isDark),
-                      _criarAvatar("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQI3J8NKYVOAuvW7i5ndqRz3znDPK6ts3W8QA&s", "Felipe", "Front-end", isDark),
-                      _criarAvatar("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQI3J8NKYVOAuvW7i5ndqRz3znDPK6ts3W8QA&s", "Kaio", "Back-end", isDark),
-                      _criarAvatar("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQI3J8NKYVOAuvW7i5ndqRz3znDPK6ts3W8QA&s", "Mateus", "DBA", isDark),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: EdgeInsets.all(16),
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset('assets/logo.png', height: 40),
+            ],
+          ),
+          centerTitle: true,
+        ),
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
+              Container(
+                color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                padding: EdgeInsets.all(10),
+                child: Center(
                   child: Text(
-                    "© 2024 IndieStream. All rights reserved.",
-                    style: TextStyle(color: textColor, fontSize: 12),
+                    "Aqui você pode",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
                   ),
                 ),
-              ],
-            ),
+              ),
+              Container(
+                color: Colors.yellow,
+                padding: EdgeInsets.all(16),
+                child: Column(
+                  children: [
+                    _criarOpcao(Icons.people, "Conectar-se com profissionais da área", isDarkMode),
+                    _criarOpcao(Icons.lightbulb, "Expressar sua criatividade", isDarkMode),
+                    _criarOpcao(Icons.video_library, "Catalogar Produções Independentes", isDarkMode),
+                    _criarOpcao(Icons.library_books, "Catalogar Produções Independentes", isDarkMode),
+                  ],
+                ),
+              ),
+              Container(
+                color: isDarkMode ? Colors.grey[800] : Colors.grey[300],
+                padding: EdgeInsets.all(10),
+                child: Center(
+                  child: Text(
+                    "Criadores do Aplicativo",
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                    ),
+                  ),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _criarAvatar("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQI3J8NKYVOAuvW7i5ndqRz3znDPK6ts3W8QA&s", "Mário", "Engenheiro de Requisitos", isDarkMode),
+                    _criarAvatar("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQI3J8NKYVOAuvW7i5ndqRz3znDPK6ts3W8QA&s", "Manoel", "Tester", isDarkMode),
+                    _criarAvatar("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQI3J8NKYVOAuvW7i5ndqRz3znDPK6ts3W8QA&s", "Felipe", "Front-end", isDarkMode),
+                    _criarAvatar("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQI3J8NKYVOAuvW7i5ndqRz3znDPK6ts3W8QA&s", "Kaio", "Back-end", isDarkMode),
+                    _criarAvatar("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQI3J8NKYVOAuvW7i5ndqRz3znDPK6ts3W8QA&s", "Mateus", "DBA", isDarkMode),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  "© 2024 IndieStream. All rights reserved.",
+                  style: TextStyle(color: textColor, fontSize: 12),
+                ),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 

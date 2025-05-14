@@ -13,24 +13,26 @@ class _TelaEdicaoPerfilState extends State<TelaEdicaoPerfil> {
   String? localizacaoSelecionada;
   String? habilidadeSelecionada;
   String? profissaoSelecionada;
+  bool isDark = true; // Definindo o tema escuro como padrão
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Color(0xFF1D1D1D),
+      backgroundColor: isDark ? Color(0xFF1D1D1D) : Colors.white, // Cor de fundo com base no tema
       appBar: AppBar(
-        backgroundColor: Color(0xFF1D1D1D),
+        backgroundColor: isDark ? Color(0xFF1D1D1D) : Colors.white,
         elevation: 0,
         automaticallyImplyLeading: false,
         title: Column(
           children: [
             SizedBox(height: 20),
-            Image.asset('assets/logo.png', height: 45,), SizedBox(height: 10),
+            Image.asset('assets/logo.png', height: 45,),
+            SizedBox(height: 10),
           ],
         ),
         centerTitle: true,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
+          icon: Icon(Icons.arrow_back, color: isDark ? Colors.white : Colors.black),
           onPressed: () {
             Navigator.pop(context);
           },
@@ -44,14 +46,14 @@ class _TelaEdicaoPerfilState extends State<TelaEdicaoPerfil> {
             children: [
               Text(
                 "Editar Usuário",
-                style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold,),
+                style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 20, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 20),
               _criarFotoPerfil(),
               SizedBox(height: 20),
-              _criarCampoTexto("Nome", "Insira seu nome"),
+              _criarCampoTexto("Nome", "Insira seu nome", isDark: isDark),
               SizedBox(height: 15),
-              _criarCampoTexto("Sobre Mim", "Fale um pouco sobre você", maxLinhas: 4),
+              _criarCampoTexto("Sobre Mim", "Fale um pouco sobre você", maxLinhas: 4, isDark: isDark),
               SizedBox(height: 15),
               _criarListaSuspensa(
                 "Profissão",
@@ -86,6 +88,8 @@ class _TelaEdicaoPerfilState extends State<TelaEdicaoPerfil> {
               ),
               SizedBox(height: 20),
               _criarBotaoSalvar(),
+              SizedBox(height: 20),
+              _criarSwitchTema(), // Adicionando o switch para alternar entre os temas
             ],
           ),
         ),
@@ -115,13 +119,13 @@ class _TelaEdicaoPerfilState extends State<TelaEdicaoPerfil> {
     );
   }
 
-  Widget _criarCampoTexto(String label, String hint, {int maxLinhas = 1}) {
+  Widget _criarCampoTexto(String label, String hint, {int maxLinhas = 1, bool isDark = true}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 8),
         TextField(
@@ -129,9 +133,9 @@ class _TelaEdicaoPerfilState extends State<TelaEdicaoPerfil> {
           style: TextStyle(color: Colors.black),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(color: Colors.grey),
+            hintStyle: TextStyle(color: isDark ? Colors.grey : Colors.black),
             filled: true,
-            fillColor: Colors.grey[200],
+            fillColor: isDark ? Colors.grey[200] : Colors.white,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide.none,
@@ -149,19 +153,19 @@ class _TelaEdicaoPerfilState extends State<TelaEdicaoPerfil> {
       children: [
         Text(
           label,
-          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+          style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16, fontWeight: FontWeight.bold),
         ),
         SizedBox(height: 8),
         Container(
           padding: EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: Colors.grey[200],
+            color: isDark ? Colors.grey[200] : Colors.white,
             borderRadius: BorderRadius.circular(10),
           ),
           child: DropdownButton<String>(
             value: valorSelecionado,
             isExpanded: true,
-            dropdownColor: Colors.white,
+            dropdownColor: isDark ? Colors.white : Colors.grey[300],
             underline: SizedBox(),
             icon: Icon(Icons.arrow_drop_down, color: Colors.black),
             style: TextStyle(color: Colors.black),
@@ -191,6 +195,28 @@ class _TelaEdicaoPerfilState extends State<TelaEdicaoPerfil> {
         ),
         child: Text("Salvar", style: TextStyle(fontSize: 16, color: Colors.black, fontWeight: FontWeight.bold)),
       ),
+    );
+  }
+
+  // Função para criar o switch para alternar entre os temas - Não consegui fazer diretamente pela pagina de configuração
+  Widget _criarSwitchTema() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          "Tema Escuro",
+          style: TextStyle(color: isDark ? Colors.white : Colors.black, fontSize: 16),
+        ),
+        Switch(
+          value: isDark,
+          onChanged: (bool novoValor) {
+            setState(() {
+              isDark = novoValor;
+            });
+          },
+          activeColor: Colors.yellow,
+        ),
+      ],
     );
   }
 }
