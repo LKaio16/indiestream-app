@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:shared_preferences/shared_preferences.dart'; // Este import pode não ser mais necessário nesta tela se AuthService lida com isso internamente
 import 'auth_service.dart';
 import 'cadastro_screen.dart';
-import 'config_page.dart' as config;
+import 'config_page.dart' as config; // Importado com alias
 import 'home_screen.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -20,7 +20,14 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   bool _obscurePassword = true;
 
-  // login_screen.dart (parte relevante)
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+
   Future<void> _login() async {
     setState(() => _isLoading = true);
 
@@ -37,33 +44,63 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final response = await http.post(
-        Uri.parse("http://localhost:8080/user/login"),
+        // Idealmente, use uma URL base de um arquivo de configuração
+        // Uri.parse("${config.backendBaseUrl}/user/login"),
+        Uri.parse("http://localhost:8080/user/login"), // Mantido o original por enquanto
         headers: {"Content-Type": "application/json"},
         body: jsonEncode({"email": email, "senha": password}),
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        final data = jsonDecode(utf8.decode(response.bodyBytes)); // Decodifica com suporte a UTF8
 
-        await AuthService.saveUserData(data['id']);
+        // ASSUMINDO que o backend retorna 'token' e 'id' no corpo 200
+        final String? token = data['token']; // Obtém o token da resposta
+        final int? userId = data['id'];     // Obtém o ID do usuário da resposta
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(data['message'] ?? 'Login bem-sucedido')),
-        );
+        if (token != null && userId != null) {
+          // Salva o token de forma segura (usando flutter_secure_storage)
+          await AuthService.saveToken(token);
+          // Salva o ID do usuário (usando SharedPreferences)
+          await AuthService.saveUserId(userId);
 
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomeScreen()),
-        );
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text(data['message'] ?? 'Login bem-sucedido')),
+          );
+
+          // Navega para a HomeScreen, substituindo a tela de login
+          // Usando pushReplacementNamed para consistência com o roteamento no main.dart
+          Navigator.pushReplacementNamed(context, '/home');
+
+        } else {
+          // Resposta 200, mas faltando dados essenciais
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Resposta do servidor incompleta: Token ou ID ausente.')),
+          );
+        }
+
       } else {
-        final errorData = jsonDecode(response.body);
+        // Lida com respostas não-200
+        String errorMessage = 'Erro desconhecido';
+        try {
+          // Tenta extrair a mensagem de erro do corpo da resposta se for JSON
+          final errorData = jsonDecode(utf8.decode(response.bodyBytes));
+          errorMessage = errorData['message'] ?? 'Erro no login';
+        } catch (e) {
+          // Se não for JSON ou a mensagem não existir
+          errorMessage = 'Erro no servidor: Status ${response.statusCode}';
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorData['message'] ?? 'Credenciais inválidas')),
+          SnackBar(content: Text(errorMessage)),
         );
       }
     } catch (e) {
+      // Lida com erros de conexão ou outras exceções
+      print("Erro durante o login: $e"); // Log do erro para depuração
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Erro ao conectar ao servidor')),
+        const SnackBar(content: Text('Erro ao conectar ao servidor. Verifique a conexão e o endereço.')),
       );
     } finally {
       setState(() => _isLoading = false);
@@ -74,7 +111,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF1D1D1D),
-      body  : Center(
+      body: Center(
         child: SingleChildScrollView(
           child: Padding(
             padding: const EdgeInsets.all(16.0),
@@ -85,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   onTap: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (context) => config.PaginaConfiguracao()), // Usando o alias para acessar a classe
+                      MaterialPageRoute(builder: (context) => config.PaginaConfiguracao()),
                     );
                   },
                   child: Image.asset(
@@ -98,16 +135,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 const Text(
                   'Faça login em sua conta',
                   style: TextStyle(
-
                     color: Colors.white,
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
                 const SizedBox(height: 20),
-                Align(
+                const Align( // Removido const desnecessário se houver algum erro
                   alignment: Alignment.centerLeft,
-                  child: const Text(
+                  child: Text(
                     'Email',
                     style: TextStyle(color: Colors.white),
                   ),
@@ -129,9 +165,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   keyboardType: TextInputType.emailAddress,
                 ),
                 const SizedBox(height: 10),
-                Align(
+                const Align( // Removido const desnecessário se houver algum erro
                   alignment: Alignment.centerLeft,
-                  child: const Text(
+                  child: Text(
                     'Senha',
                     style: TextStyle(color: Colors.white),
                   ),
@@ -167,7 +203,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: TextButton(
-                    onPressed: () {},
+                    onPressed: () {}, // Esqueceu a senha action
                     child: const Text(
                       'Esqueceu a senha',
                       style: TextStyle(color: Colors.yellow),
