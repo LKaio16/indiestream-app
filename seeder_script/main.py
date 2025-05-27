@@ -223,6 +223,41 @@ class ProjetoRepository:
             log.error(f"Erro ao buscar projetos: {e}")
             return []
 
+class ObraFavorita:
+    def __init__(self, id_usuario, id_projeto):
+        self.id_usuario = id_usuario
+        self.id_projeto = id_projeto
+
+class ObraFavoritaRepository:
+    def __init__(self, db_connection):
+        self.db = db_connection
+
+    def obter_usuarios(self):
+        try:
+            self.db.cursor.execute("SELECT id_usuario FROM usuario")
+            return [row[0] for row in self.db.cursor.fetchall()]
+        except Exception as e:
+            log.error(f"Erro ao buscar usuários: {e}")
+            return []
+
+    def obter_projetos(self):
+        try:
+            self.db.cursor.execute("SELECT id_projeto FROM projeto")
+            return [row[0] for row in self.db.cursor.fetchall()]
+        except Exception as e:
+            log.error(f"Erro ao buscar projetos: {e}")
+            return []
+
+    def inserir_obras_favoritas(self, obras_favoritas):
+        try:
+            query = "INSERT INTO obra_favorita (id_usuario, id_projeto) VALUES (%s, %s)"
+            self.db.cursor.executemany(query, [(o.id_usuario, o.id_projeto) for o in obras_favoritas])
+            self.db.conn.commit()
+            log.info("Obras favoritas inseridas com sucesso na tabela 'obra_favorita'.")
+        except Exception as e:
+            log.error(f"Erro ao salvar obras favoritas: {e}")
+            self.db.conn.rollback()
+
 def main():
     """Função principal para executar o script."""
     # Lista de profissões
@@ -274,9 +309,11 @@ def main():
     repo = ProfissaoRepository(db)
     repo_habilidade = HabilidadeRepository(db)
     repo_projeto = ProjetoRepository(db)
+    repo_obra_favorita = ObraFavoritaRepository(db)
     op.truncate_table("profissao", "CASCADE")
     op.truncate_table("habilidade", "CASCADE")
     op.truncate_table("comentario")
+    op.truncate_table("obra_favorita")
     repo.inserir_profissoes(lista_profissoes)
     repo_habilidade.inserir_habilidades(lista_habilidades)
 
@@ -287,7 +324,6 @@ def main():
     profissoes = repo_usuario_profissao.obter_profissoes()
     habilidades = repo_usuario_habilidade.obter_habilidades()
     projetos = repo_projeto.obter_projetos()
-
 
     if not usuarios or not profissoes:
         log.warning("Nenhum usuário ou profissão encontrado no banco de dados.")
@@ -304,7 +340,7 @@ def main():
         escolhidas = random.sample(profissoes, k=min(2, len(profissoes)))  # Pelo menos 2 profissões
         usuario_profissoes.extend([(prof, usuario) for prof in escolhidas])
 
-    # Asscoiar usuários a pelo menos 3 habilidades
+    # Associar usuários a pelo menos 3 habilidades
     usuario_habilidades = []
     for usuario in usuarios:
         escolhidas = random.sample(habilidades, k=min(3, len(habilidades)))  # Pelo menos 3 habilidades
@@ -320,6 +356,13 @@ def main():
             texto = f"{tema} {adjetivo}. {complemento}"
             comentarios.append((texto, projeto, usuario))
 
+    # Associar usuários a 2 obras favoritas
+    obras_favoritas = []
+    for usuario in usuarios:
+        favoritos = random.sample(projetos, 2)
+        for projeto in favoritos:
+            obras_favoritas.append(ObraFavorita(usuario, projeto))
+
     # Inserir as associações na tabela usuario_profissao
     repo_usuario_profissao.inserir_usuario_profissoes(usuario_profissoes)
 
@@ -328,6 +371,9 @@ def main():
 
     # Inserir os comentários no banco de dados
     repo_comentario.inserir_comentario(comentarios)
+
+    # Inserir as associações na tabela obra_favorita
+    repo_obra_favorita.inserir_obras_favoritas(obras_favoritas)
 
     # Fechar conexão
     db.close()
