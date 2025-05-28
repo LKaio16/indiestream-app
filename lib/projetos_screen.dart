@@ -754,54 +754,62 @@ class _ProjetosScreenState extends State<ProjetosScreen> with WidgetsBindingObse
                                   // Imagem do projeto com overlay de gradiente
                                   Stack(
                                     children: [
-                                      Hero(
-                                        tag: 'project-image-${projetoParaDetalhes.id}',
-                                        child: CachedNetworkImage(
-                                          imageUrl: projetoParaDetalhes.imagemUrl,
-                                          height: 200,
-                                          fit: BoxFit.cover,
-                                          placeholder: (context, url) => Container(
+                                      // Container para garantir que a imagem preencha todo o espaço
+                                      SizedBox(
+                                        width: double.infinity,
+                                        height: 200,
+                                        child: Hero(
+                                          tag: 'project-image-${projetoParaDetalhes.id}',
+                                          child: CachedNetworkImage(
+                                            imageUrl: projetoParaDetalhes.imagemUrl,
+                                            width: double.infinity,
                                             height: 200,
-                                            color: Color(0xFF2C3545),
-                                            child: Center(
-                                              child: SizedBox(
-                                                width: 30,
-                                                height: 30,
-                                                child: CircularProgressIndicator(
-                                                  valueColor: AlwaysStoppedAnimation<Color>(_accentColor),
-                                                  strokeWidth: 2,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          errorWidget: (context, url, error) {
-                                            print("Erro ao carregar imagem: $url\nErro: $error");
-                                            return Container(
+                                            fit: BoxFit.cover,
+                                            placeholder: (context, url) => Container(
+                                              width: double.infinity,
                                               height: 200,
                                               color: Color(0xFF2C3545),
                                               child: Center(
-                                                child: Column(
-                                                  mainAxisAlignment: MainAxisAlignment.center,
-                                                  children: [
-                                                    Icon(
-                                                      FontAwesomeIcons.photoFilm,
-                                                      color: _textSecondaryColor,
-                                                      size: 40,
-                                                    ),
-                                                    SizedBox(height: 12),
-                                                    Text(
-                                                      "Imagem não disponível",
-                                                      style: GoogleFonts.poppins(
-                                                        color: _textSecondaryColor,
-                                                        fontSize: 14,
-                                                      ),
-                                                      textAlign: TextAlign.center,
-                                                    ),
-                                                  ],
+                                                child: SizedBox(
+                                                  width: 30,
+                                                  height: 30,
+                                                  child: CircularProgressIndicator(
+                                                    valueColor: AlwaysStoppedAnimation<Color>(_accentColor),
+                                                    strokeWidth: 2,
+                                                  ),
                                                 ),
                                               ),
-                                            );
-                                          },
+                                            ),
+                                            errorWidget: (context, url, error) {
+                                              print("Erro ao carregar imagem: $url\nErro: $error");
+                                              return Container(
+                                                width: double.infinity,
+                                                height: 200,
+                                                color: Color(0xFF2C3545),
+                                                child: Center(
+                                                  child: Column(
+                                                    mainAxisAlignment: MainAxisAlignment.center,
+                                                    children: [
+                                                      Icon(
+                                                        FontAwesomeIcons.photoFilm,
+                                                        color: _textSecondaryColor,
+                                                        size: 40,
+                                                      ),
+                                                      SizedBox(height: 12),
+                                                      Text(
+                                                        "Imagem não disponível",
+                                                        style: GoogleFonts.poppins(
+                                                          color: _textSecondaryColor,
+                                                          fontSize: 14,
+                                                        ),
+                                                        textAlign: TextAlign.center,
+                                                      ),
+                                                    ],
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                          ),
                                         ),
                                       ),
                                       // Gradiente de sobreposição para melhorar legibilidade
@@ -970,91 +978,6 @@ class _ProjetosScreenState extends State<ProjetosScreen> with WidgetsBindingObse
                                           ),
                                           maxLines: 3,
                                           overflow: TextOverflow.ellipsis,
-                                        ),
-
-                                        // Localização do projeto
-                                        if (projetoParaDetalhes.localizacao.isNotEmpty &&
-                                            projetoParaDetalhes.localizacao != "Localização Indisponível") ...[
-                                          SizedBox(height: 16),
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.location_on,
-                                                color: _textSecondaryColor,
-                                                size: 16,
-                                              ),
-                                              SizedBox(width: 6),
-                                              Expanded(
-                                                child: Text(
-                                                  projetoParaDetalhes.localizacao,
-                                                  style: GoogleFonts.poppins(
-                                                    color: _textSecondaryColor,
-                                                    fontSize: 13,
-                                                  ),
-                                                  maxLines: 1,
-                                                  overflow: TextOverflow.ellipsis,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ],
-
-                                        // Botão de ver detalhes
-                                        SizedBox(height: 16),
-                                        Align(
-                                          alignment: Alignment.centerRight,
-                                          child: ElevatedButton(
-                                            onPressed: () async {
-                                              HapticFeedback.mediumImpact();
-
-                                              if (_usuarioAtualCarregado == null) {
-                                                ScaffoldMessenger.of(context).showSnackBar(
-                                                  SnackBar(
-                                                    content: Text(
-                                                      "Aguarde, carregando dados do usuário...",
-                                                      style: GoogleFonts.poppins(),
-                                                    ),
-                                                    backgroundColor: _cardColor,
-                                                    behavior: SnackBarBehavior.floating,
-                                                    shape: RoundedRectangleBorder(
-                                                      borderRadius: BorderRadius.circular(10),
-                                                    ),
-                                                  ),
-                                                );
-                                                return;
-                                              }
-
-                                              final result = await Navigator.push(
-                                                context,
-                                                MaterialPageRoute(
-                                                  builder: (context) => ProjectDetailsScreen(
-                                                    projeto: projetoParaDetalhes,
-                                                    usuarioAtual: _usuarioAtualCarregado!,
-                                                  ),
-                                                ),
-                                              );
-
-                                              if (mounted) {
-                                                _carregarDados();
-                                              }
-                                            },
-                                            style: ElevatedButton.styleFrom(
-                                              backgroundColor: _accentColor,
-                                              foregroundColor: Colors.black,
-                                              elevation: 0,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius: BorderRadius.circular(12),
-                                              ),
-                                              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                                            ),
-                                            child: Text(
-                                              "Ver Detalhes",
-                                              style: GoogleFonts.poppins(
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 14,
-                                              ),
-                                            ),
-                                          ),
                                         ),
                                       ],
                                     ),
