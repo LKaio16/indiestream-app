@@ -3,8 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import 'api_constants.dart';
 import 'auth_service.dart'; // Certifique-se de que este import está correto
 import 'package:google_fonts/google_fonts.dart'; // Adicionado Google Fonts para consistência
+import 'package:image_picker/image_picker.dart'; // Import for image_picker
+import 'dart:io'; // Import for File
+
 // import 'package:indiestream_app/AppColors.dart'; // Importe AppColors se definido
 
 class CriarProjetoScreen extends StatefulWidget {
@@ -16,29 +20,47 @@ class CriarProjetoScreen extends StatefulWidget {
 
 class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
   final _formKey = GlobalKey<FormState>();
+
   // Add a GlobalKey for the Status Dropdown's FormField
   final GlobalKey<FormFieldState<String>> _statusFieldKey =
-  GlobalKey<FormFieldState<String>>();
+      GlobalKey<FormFieldState<String>>();
 
   final TextEditingController _tituloController = TextEditingController();
   final TextEditingController _descricaoController = TextEditingController();
   final TextEditingController _localizacaoController = TextEditingController();
-  // Removido _imagemController conforme a solicitação
   final TextEditingController _tipoController = TextEditingController();
+
+  // New: State variable for the selected image file
+  XFile? _selectedImage;
+
+  // New: ImagePicker instance
+  final ImagePicker _picker = ImagePicker();
 
   String _status = "Em andamento"; // Default value
 
   String _error = "";
   bool _isLoading = false;
 
+  // New: Method to pick an image
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    setState(() {
+      _selectedImage = image;
+    });
+  }
+
   Future<void> _criarProjeto() async {
-    // Validate all fields including the dropdown (if it had a validator)
     if (!_formKey.currentState!.validate()) {
-      // Explicitly validate the dropdown if needed, although current setup doesn't require it
-      // _statusFieldKey.currentState?.validate();
       return;
     }
 
+    // New: Validate if an image has been selected
+    if (_selectedImage == null) {
+      setState(() {
+        _error = "Por favor, selecione uma imagem para o projeto.";
+      });
+      return;
+    }
 
     setState(() {
       _isLoading = true;
@@ -53,45 +75,80 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
           _error = "Usuário não está logado. Faça login novamente.";
           _isLoading = false;
         });
-        // Opcional: Redirecionar para a tela de login
-        // Navigator.of(context).pushReplacementNamed('/login');
         return;
       }
+
+      String? imageUrl;
+
+      final request = http.MultipartRequest(
+        'POST',
+        // Mude para o endpoint correto de upload de imagem no seu backend
+        Uri.parse("${ApiConstants.baseUrl}/projetos/upload-imagem"),
+      );
+      request.files.add(await http.MultipartFile.fromPath(
+        'file',
+        // Nome do campo esperado pelo backend (@RequestParam("file") MultipartFile file)
+        _selectedImage!.path,
+        filename: _selectedImage!.name,
+      ));
+
+      final responseUpload = await request.send();
+      if (responseUpload.statusCode == 200) {
+        final responseData = await responseUpload.stream.bytesToString();
+        // O backend retorna um JSON {"url": "..."}
+        final Map<String, dynamic> uploadResult = json.decode(responseData);
+        imageUrl =
+            uploadResult['url']; // Pega a URL do JSON retornado pelo backend
+      } else {
+        // Tratar erro de upload de imagem
+        String uploadErrorMessage = "Erro ao fazer upload da imagem";
+        try {
+          final errorData =
+              json.decode(await responseUpload.stream.bytesToString());
+          uploadErrorMessage = errorData['message'] ?? uploadErrorMessage;
+        } catch (e) {
+          print("Erro ao parsear resposta de erro do upload: $e");
+        }
+        setState(() {
+          _error = uploadErrorMessage;
+        });
+        _isLoading = false;
+        return; // Interrompe a criação do projeto se o upload falhar
+      }
+
+      // --- Fim da lógica de upload de imagem (simulado) ---
 
       final novoProjeto = {
         "titulo": _tituloController.text,
         "descricao": _descricaoController.text,
         "localizacao": _localizacaoController.text,
-        // Removido "imagemUrl" do payload conforme a solicitação
+        "imagemUrl": imageUrl, // New: Add the image URL
         "tipo": _tipoController.text,
         "status": _status,
-        // A API deve lidar com a associação do criador
-        // Se a API espera o criador no corpo, ajuste aqui.
-        // Mantendo o que estava, mas verificando se a API realmente precisa disso aqui *e* no query param.
-        "pessoasEnvolvidas": [{"id": userId}],
+        "pessoasEnvolvidas": [
+          {"id": userId}
+        ],
       };
 
-      // Verifique a documentação da sua API: o usuarioCriadorId vai no query param
-      // ou no corpo do request? O código anterior usava query param.
-      // Mantendo o query param como estava:
       final response = await http.post(
-        Uri.parse("http://localhost:8080/projetos?usuarioCriadorId=$userId"),
-        headers: {"Content-Type": "application/json"},
+        Uri.parse("${ApiConstants.baseUrl}/projetos?usuarioCriadorId=$userId"),
+        headers: {
+          "Content-Type": "application/json",
+          'ngrok-skip-browser-warning': 'skip-browser-warning',
+        },
         body: json.encode(novoProjeto),
       );
 
       if (response.statusCode == 200 || response.statusCode == 201) {
-        // Sucesso
-        Navigator.pop(context, true); // Retorna 'true' indicando sucesso
+        Navigator.pop(context, true);
       } else {
-        // Tratar erros da API
         String errorMessage = "Erro ao criar o projeto";
         try {
           final errorData = json.decode(utf8.decode(response.bodyBytes));
-          errorMessage = errorData['message'] ?? errorData['error'] ?? errorMessage;
+          errorMessage =
+              errorData['message'] ?? errorData['error'] ?? errorMessage;
         } catch (e) {
           print("Erro ao parsear resposta de erro: $e");
-          // Continua com a mensagem de erro padrão se o parse falhar
         }
 
         setState(() {
@@ -99,7 +156,6 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
         });
       }
     } catch (e) {
-      // Tratar erros de conexão ou outros
       setState(() {
         _error = "Erro inesperado: ${e.toString()}";
       });
@@ -112,10 +168,9 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Definir cores de fundo e texto para consistência com o tema escuro da imagem
-    final Color backgroundColor = Color(0xFF121212); // Fundo bem escuro
-    final Color appBarColor = Color(0xFF1F2937); // Cor da AppBar próxima da imagem
-    final Color cardColor = Color(0xFF1F2937); // Cor dos campos/cartões
+    final Color backgroundColor = Color(0xFF121212);
+    final Color appBarColor = Color(0xFF1F2937);
+    final Color cardColor = Color(0xFF1F2937);
     final Color textColor = Colors.white;
     final Color hintColor = Colors.white54;
     final Color labelColor = Colors.white70;
@@ -125,12 +180,11 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
       appBar: AppBar(
         title: Text(
           "Criar Novo Projeto",
-          style: GoogleFonts.inter(color: Colors.white), // Usando GoogleFonts
+          style: GoogleFonts.inter(color: Colors.white),
         ),
         backgroundColor: appBarColor,
-        // surfaceTintColor: Colors.white, // Pode causar um overlay claro em algumas plataformas
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white), // Cor do ícone de voltar
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
           onPressed: () => Navigator.pop(context),
         ),
       ),
@@ -139,24 +193,96 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
         child: Form(
           key: _formKey,
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch, // Para esticar os campos
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Logo no topo
-              Center( // Centraliza a logo
+              Center(
                 child: Image.asset(
-                  'assets/logo.png', // Caminho da sua logo
+                  'assets/logo.png',
                   height: 80,
-                  // fit: BoxFit.contain, // Ajusta o tamanho da imagem
                 ),
               ),
-              const SizedBox(height: 30), // Espaço maior após a logo
+              const SizedBox(height: 30),
 
-              // Removido o campo de imagem conforme solicitação e layout da imagem
+              // New: Image selection field
+              Padding(
+                padding: const EdgeInsets.only(bottom: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      "Imagem do Projeto",
+                      style: TextStyle(
+                        color: labelColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: Container(
+                        height: 150,
+                        decoration: BoxDecoration(
+                          color: cardColor,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: _selectedImage == null
+                                ? Colors.red
+                                : Colors
+                                    .transparent, // Highlight if no image selected
+                            width: 1.5,
+                          ),
+                        ),
+                        child: _selectedImage != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(8),
+                                child: Image.file(
+                                  File(_selectedImage!.path),
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                ),
+                              )
+                            : Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.camera_alt,
+                                      color: hintColor,
+                                      size: 40,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      "Tocar para selecionar imagem",
+                                      style: GoogleFonts.inter(
+                                        color: hintColor,
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                      ),
+                    ),
+                    if (_selectedImage == null &&
+                        _error.contains("selecione uma imagem"))
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8.0, left: 16.0),
+                        child: Text(
+                          "Por favor, selecione uma imagem para o projeto.",
+                          style:
+                              const TextStyle(color: Colors.red, fontSize: 12),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              // End: New Image selection field
 
-              // Campo Título
               _buildTextField(
                 controller: _tituloController,
-                label: "Título do Projeto", // Ajustado o label conforme a imagem
+                label: "Título do Projeto",
                 hint: "Insira o título do projeto",
                 textColor: textColor,
                 hintColor: hintColor,
@@ -173,11 +299,10 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
                 },
               ),
 
-              // Campo Descrição
               _buildTextArea(
                 controller: _descricaoController,
                 label: "Descrição",
-                hint: "Descreva seu projeto", // Ajustado o hint conforme a imagem
+                hint: "Descreva seu projeto",
                 textColor: textColor,
                 hintColor: hintColor,
                 fillColor: cardColor,
@@ -193,11 +318,10 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
                 },
               ),
 
-              // Campo Localização
               _buildTextField(
                 controller: _localizacaoController,
                 label: "Localização",
-                hint: "Localização do projeto", // Ajustado o hint conforme a imagem
+                hint: "Localização do projeto",
                 textColor: textColor,
                 hintColor: hintColor,
                 fillColor: cardColor,
@@ -210,11 +334,10 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
                 },
               ),
 
-              // Campo Tipo (Campo Livre)
               _buildTextField(
                 controller: _tipoController,
-                label: "Tipo do Projeto", // Ajustado o label conforme a imagem
-                hint: "Ex: Filme, Série, Documentário", // Ajustado o hint para campo livre
+                label: "Tipo do Projeto",
+                hint: "Ex: Filme, Série, Documentário",
                 textColor: textColor,
                 hintColor: hintColor,
                 fillColor: cardColor,
@@ -227,17 +350,14 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
                 },
               ),
 
-              // Campo Status (Dropdown) - Mantido como dropdown conforme solicitação
               _buildDropdown(
-                label: "Status do Projeto", // Ajustado o label
-                dropdownColor: appBarColor, // Cor do dropdown
-                fillColor: cardColor, // Cor de fundo do container do dropdown
+                label: "Status do Projeto",
+                dropdownColor: appBarColor,
+                fillColor: cardColor,
                 labelColor: labelColor,
                 textColor: textColor,
               ),
 
-
-              // Mensagem de erro
               if (_error.isNotEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 10),
@@ -247,16 +367,15 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
                       color: Colors.red,
                       fontSize: 16,
                     ),
-                    textAlign: TextAlign.center, // Centraliza a mensagem de erro
+                    textAlign: TextAlign.center,
                   ),
                 ),
 
-              const SizedBox(height: 20), // Espaço antes do botão
+              const SizedBox(height: 20),
 
-              // Botão Criar Projeto
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.amber, // Cor âmbar conforme a imagem
+                  backgroundColor: Colors.amber,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -265,21 +384,21 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
                 onPressed: _isLoading ? null : _criarProjeto,
                 child: _isLoading
                     ? const SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: CircularProgressIndicator(
-                    color: Colors.black, // Cor do indicador
-                    strokeWidth: 3,
-                  ),
-                )
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          color: Colors.black,
+                          strokeWidth: 3,
+                        ),
+                      )
                     : Text(
-                  "CRIAR PROJETO",
-                  style: GoogleFonts.inter( // Usando GoogleFonts
-                    color: Colors.black,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                  ),
-                ),
+                        "CRIAR PROJETO",
+                        style: GoogleFonts.inter(
+                          color: Colors.black,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
               ),
               const SizedBox(height: 20),
             ],
@@ -309,14 +428,14 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
             style: TextStyle(
               color: labelColor ?? Colors.white70,
               fontSize: 16,
-              fontWeight: FontWeight.w500, // Levemente mais negrito
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 8),
           TextFormField(
             controller: controller,
             style: TextStyle(color: textColor ?? Colors.white),
-            cursorColor: Colors.amber, // Cor do cursor
+            cursorColor: Colors.amber,
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(color: hintColor ?? Colors.white54),
@@ -330,20 +449,20 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
                 horizontal: 16,
                 vertical: 14,
               ),
-              errorStyle: const TextStyle(color: Colors.red, fontSize: 12), // Menor fonte para erro
-              focusedBorder: OutlineInputBorder( // Borda quando focado
+              errorStyle: const TextStyle(color: Colors.red, fontSize: 12),
+              focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.amber, width: 1.5), // Borda âmbar
+                borderSide: BorderSide(color: Colors.amber, width: 1.5),
               ),
-              enabledBorder: OutlineInputBorder( // Borda normal
+              enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none, // Sem borda no estado normal
+                borderSide: BorderSide.none,
               ),
-              errorBorder: OutlineInputBorder( // Borda com erro
+              errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(color: Colors.red, width: 1.5),
               ),
-              focusedErrorBorder: OutlineInputBorder( // Borda com erro e focado
+              focusedErrorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(color: Colors.red, width: 1.5),
               ),
@@ -375,7 +494,7 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
             style: TextStyle(
               color: labelColor ?? Colors.white70,
               fontSize: 16,
-              fontWeight: FontWeight.w500, // Levemente mais negrito
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 8),
@@ -383,7 +502,7 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
             controller: controller,
             style: TextStyle(color: textColor ?? Colors.white),
             maxLines: 4,
-            cursorColor: Colors.amber, // Cor do cursor
+            cursorColor: Colors.amber,
             decoration: InputDecoration(
               hintText: hint,
               hintStyle: TextStyle(color: hintColor ?? Colors.white54),
@@ -397,20 +516,20 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
                 horizontal: 16,
                 vertical: 12,
               ),
-              errorStyle: const TextStyle(color: Colors.red, fontSize: 12), // Menor fonte para erro
-              focusedBorder: OutlineInputBorder( // Borda quando focado
+              errorStyle: const TextStyle(color: Colors.red, fontSize: 12),
+              focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide(color: Colors.amber, width: 1.5), // Borda âmbar
+                borderSide: BorderSide(color: Colors.amber, width: 1.5),
               ),
-              enabledBorder: OutlineInputBorder( // Borda normal
+              enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none, // Sem borda no estado normal
+                borderSide: BorderSide.none,
               ),
-              errorBorder: OutlineInputBorder( // Borda com erro
+              errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(color: Colors.red, width: 1.5),
               ),
-              focusedErrorBorder: OutlineInputBorder( // Borda com erro e focado
+              focusedErrorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(color: Colors.red, width: 1.5),
               ),
@@ -439,7 +558,7 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
             style: TextStyle(
               color: labelColor ?? Colors.white70,
               fontSize: 16,
-              fontWeight: FontWeight.w500, // Levemente mais negrito
+              fontWeight: FontWeight.w500,
             ),
           ),
           const SizedBox(height: 8),
@@ -448,15 +567,14 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
             decoration: BoxDecoration(
               color: fillColor ?? Colors.grey[800],
               borderRadius: BorderRadius.circular(8),
-              // Use the key to check the error state
               border: Border.all(
-                  color: _statusFieldKey.currentState?.hasError == true ? Colors.red : Colors.transparent,
-                  width: 1.5
-              ),
+                  color: _statusFieldKey.currentState?.hasError == true
+                      ? Colors.red
+                      : Colors.transparent,
+                  width: 1.5),
             ),
-            // Wrap DropdownButton with FormField to participate in form validation
             child: FormField<String>(
-              key: _statusFieldKey, // Assign the key here
+              key: _statusFieldKey,
               initialValue: _status,
               builder: (FormFieldState<String> state) {
                 return DropdownButtonHideUnderline(
@@ -465,7 +583,7 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
                     isExpanded: true,
                     dropdownColor: dropdownColor ?? Colors.grey[900],
                     style: TextStyle(color: textColor ?? Colors.white),
-                    icon: Icon(Icons.arrow_drop_down, color: Colors.white70), // Cor do ícone
+                    icon: Icon(Icons.arrow_drop_down, color: Colors.white70),
                     items: const [
                       DropdownMenuItem(
                         value: "Em andamento",
@@ -476,11 +594,11 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
                         child: Text("Concluído"),
                       ),
                       DropdownMenuItem(
-                        value: "Pré-produção", // Adicionado para mais opções
+                        value: "Pré-produção",
                         child: Text("Pré-produção"),
                       ),
                       DropdownMenuItem(
-                        value: "Cancelado", // Adicionado para mais opções
+                        value: "Cancelado",
                         child: Text("Cancelado"),
                       ),
                     ],
@@ -489,21 +607,17 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
                         setState(() {
                           _status = newValue;
                         });
-                        state.didChange(newValue); // Notify FormField of change
+                        state.didChange(newValue);
                       }
                     },
                   ),
                 );
               },
-              // Add validator for the dropdown if needed (e.g., if a "Select Status" initial value is used)
               validator: (value) {
-                // If the initial value is null or a placeholder, you might add validation here
-                // Example: if (value == null || value.isEmpty || value == 'Select Status') return 'Please select a status';
-                return null; // Assuming "Em andamento" is a valid default
+                return null;
               },
             ),
           ),
-          // Display error text if the FormField has an error
           if (_statusFieldKey.currentState?.hasError == true)
             Padding(
               padding: const EdgeInsets.only(top: 8.0, left: 16.0),
@@ -517,13 +631,11 @@ class _CriarProjetoScreenState extends State<CriarProjetoScreen> {
     );
   }
 
-
   @override
   void dispose() {
     _tituloController.dispose();
     _descricaoController.dispose();
     _localizacaoController.dispose();
-    // Removido _imagemController.dispose()
     _tipoController.dispose();
     super.dispose();
   }
