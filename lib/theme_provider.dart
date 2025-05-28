@@ -7,6 +7,6 @@ class ThemeProvider with ChangeNotifier {
 
   set isDarkMode(bool value) {
     _isDarkMode = value;
-    notifyListeners(); // Notifica os ouvintes para reconstruir a árvore de widgets
+    notifyListeners();
   }
 }
