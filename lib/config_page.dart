@@ -68,10 +68,10 @@ class _PaginaConfiguracaoState extends State<PaginaConfiguracao> {
             _criarItemFonte("Tamanho da Fonte", cardColor, textColor),
             SizedBox(height: 20),
             GestureDetector(
-              onTap: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => edit.TelaEdicaoPerfil()));
-              },
+              // onTap: () {
+              //   Navigator.push(context,
+              //       MaterialPageRoute(builder: (context) => edit.EditarPerfilScreen()));
+              // },
               child: _criarBotao("Editar Perfil", cardColor, textColor),
             ),
             SizedBox(height: 15),
